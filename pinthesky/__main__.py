@@ -1,4 +1,6 @@
+import logging
 from pinthesky import events, input, output, upload, session, combiner
+import pinthesky
 from pinthesky.camera import CameraThread
 import argparse
 import sys
@@ -72,6 +74,8 @@ def create_parser():
 
 def main():
     parsed = create_parser().parse_args(sys.argv[1:])
+    # TODO: make this externally configurable
+    pinthesky.set_stream_logger("pinthesky", level=logging.INFO)
     event_thread = events.EventThread()
     input_thread = input.InputThread(
         events=event_thread,
@@ -88,7 +92,7 @@ def main():
         events=event_thread,
         bucket_name=parsed.bucket_name,
         bucket_prefix=parsed.bucket_prefix,
-        session_container=auth_session)
+        session=auth_session)
     camera_thread = CameraThread(
         events=events,
         sensitivity=parsed.sensitivity,
