@@ -20,7 +20,9 @@ class EventThread(threading.Thread):
 
     def on(self, handler: Handler):
         for event_name in event_names:
-            self.on_event(event_name=event_name, handler=partial(handler[f'on_{event_name}']))
+            method_name = f'on_{event_name}'
+            method = getattr(handler, method_name)
+            self.on_event(event_name=event_name, handler=partial(method))
 
 
     def on_event(self, event_name, handler):
