@@ -1,0 +1,23 @@
+[Unit]
+Description=Pi In the Sky Device Service
+
+[Service]
+EnvironmentFile=/etc/pinthesky/pinthesky.env
+ExecStart=/usr/local/bin/pinthesky \
+    --buffer $BUFFER \
+    --sensitivity $SENSITIVITY \
+    --combine-dir $COMBINE_DIR \
+    --rotation $ROTATION \
+    --resolution $RESOLUTION \
+    --framerate $FRAMERATE \
+    --event-input $EVENT_INPUT \
+    --event-output $EVENT_OUTPUT \
+    --bucket-name $BUCKET_NAME \
+    --bucket-prefix $BUCKET_PREFIX \
+    --role-alias $ROLE_ALIAS \
+    --thing-name $THING_NAME \
+    --thing-cert $THING_CERT \
+    --thing-key $THING_KEY \
+    --ca-cert $CA_CERT \
+    --credentials-endpoint $CREDENTIALS_ENDPOINT
+Restart=on-failure
