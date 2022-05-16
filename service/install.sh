@@ -148,7 +148,7 @@ if [ $ASSUME_ROOT = 'y' ]; then
     COMMAND_PREFIX="$COMMAND_PREFIX sudo"
 fi
 
-# install_pinthesky "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+install_pinthesky "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
 
 if [ -z $AWS_CLI ]; then
     echo "The AWS CLI is not installed. Finished"
