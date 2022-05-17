@@ -5,9 +5,22 @@ DEFAULT_THING_NAME="PinTheSkyThing"
 DEFAULT_ROLE_ALIAS_NAME="PinTheSkyRoleAlias"
 DEFAULT_ROLE_NAME="PinTheSkyRole"
 DEFAULT_THING_POLICY_NAME="PinTheSkyThingPolicy"
+DEFAULT_BUCKET_PREFIX="motion_videos"
+DEFAULT_EVENT_INPUT="/usr/share/pinthesky/events/input.json"
+DEFAULT_EVENT_OUTPUT="/usr/share/pinthesky/events/output.json"
+DEFAULT_COMBINE_DIR="/usr/share/pinthesky/motion_videos"
+DEFAULT_BUFFER="15"
+DEFAULT_SENSITIVITY="10"
+DEFAULT_FRAMERATE="20"
+DEFAULT_ROTATION="0"
+DEFAULT_RESOLUTION="640x480"
 RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
 INSTALL_VERSION="git+https://github.com/philcali/pits-device.git"
 ROOT_CA_LOCATION="https://www.amazontrust.com/repository/AmazonRootCA1.pem"
+CERT_FILE="thing.cert.pem"
+PRV_KEY_FILE="thing.key"
+PUB_KEY_FILE="thing.pub"
+CA_CERT="AmazonRootCA1.pem"
 
 function banner() {
     echo "
@@ -31,16 +44,30 @@ function download_resource() {
     local RESOURCE_FILE=$1
 
     if [ -f "service/$RESOURCE_FILE" ]; then
+        # Assume we're running locally
         cp service/$RESOURCE_FILE $RESOURCE_FILE
     else
+        # Pull from CDN
         wget -O $RESOURCE_FILE $RAW_CONTENT_URL/service/$RESOURCE_FILE
     fi
+}
+
+function set_env_val() {
+    local COMMAND_PREFIX=$1
+    local VAR_NME=$2
+    local VAR_VAL=$3
+
+    SED_INPUT="'s|${VAR_NME}=\"\"|${VAR_NME}=\"${VAR_VAL}\"|'"
+    $COMMAND_PREFIX sed -i $SED_INPUT /etc/pinthesky/pinthesky.env
+    echo "Updated pinthesky.env $VAR_NME to $VAR_VAL"
 }
 
 function associate_thing() {
     local CLIENT_MACHINE=$1
     local HOST_MACHINE=$2
     local COMMAND_PREFIX=$3
+    local IAM_POLCY_ARN=$4
+
     read -p "Enter the Thing name [$DEFAULT_THING_NAME]: " THING_NAME
     THING_NAME=${THING_NAME:-$DEFAULT_THING_NAME}
     THING_OUTPUT=$(aws iot describe-thing --thing-name $THING_NAME 2>/dev/null)
@@ -48,6 +75,7 @@ function associate_thing() {
         THING_OUTPUT=$(aws iot create-thing --thing-name $THING_NAME)
         echo "Created AWS IoT Thing $THING_NAME"
     fi
+    set_env_val "$COMMAND_PREFIX" "THING_NAME" "$THING_NAME"
     read -p "Enter the IAM Role name [$DEFAULT_ROLE_NAME]: " ROLE_NAME
     ROLE_NAME=${ROLE_NAME:-$DEFAULT_ROLE_NAME}
     ROLE_OUTPUT=$(aws iam get-role --role-name $ROLE_NAME 2>/dev/null)
@@ -56,6 +84,10 @@ function associate_thing() {
         ROLE_OUTPUT=$(aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://default.iam.role.json)
         rm default.iam.role.json
         echo "Created IAM role $ROLE_NAME"
+    fi
+    if [ ! -z "$IAM_POLCY_ARN" ]; then
+        aws iam attach-role-policy --role-name ${ROLE_NAME} --policy-arn ${IAM_POLCY_ARN}
+        echo "Attached $IAM_POLCY_ARN to $ROLE_NAME"
     fi
     ROLE_ARN=$(echo $ROLE_OUTPUT | jq '.Role.Arn' | tr -d '"')
     read -p "Enter the Role Alias name [$DEFAULT_ROLE_ALIAS_NAME]: " ROLE_ALIAS
@@ -68,6 +100,7 @@ function associate_thing() {
     else
         ROLE_ALIAS_ARN=$(echo $ROLE_ALIAS_OUTPUT | jq '.roleAliasDescription.roleAliasArn' | tr -d '"')
     fi
+    set_env_val "$COMMAND_PREFIX" "ROLE_ALIAS" "$ROLE_ALIAS"
     read -p "Enter the Thing policy name [$DEFAULT_THING_POLICY_NAME]: " THING_POLICY
     THING_POLICY=${THING_POLICY:-$DEFAULT_THING_POLICY_NAME}
     POLICY_OUTPUT=$(aws iot get-policy --policy-name $THING_POLICY 2>/dev/null)
@@ -80,18 +113,14 @@ function associate_thing() {
     fi
     read -p 'Create certificates? [y/n] ' CREATE_CERTS
     if [ $CREATE_CERTS = 'y' ]; then
-        CERT_FILE="thing.cert.pem"
-        PRV_KEY_FILE="thing.key"
-        PUB_KEY_FILE="thing.pub"
-        CA_CERT="AmazonRootCA1.pem"
         wget -O $CA_CERT $ROOT_CA_LOCATION
         CERT_OUTPUT=$(aws iot create-keys-and-certificate --set-as-active --public-key-outfile $PUB_KEY_FILE --private-key-outfile $PRV_KEY_FILE --certificate-pem-outfile $CERT_FILE)
         echo "Created AWS IoT Thing Certificates for $THING_NAME"
 
         CERT_ARN=$(echo $CERT_OUTPUT | jq '.certificateArn' | tr -d '"')
-        $(aws iot attach-thing-principal --thing-name $THING_NAME --principal $CERT_ARN)
+        aws iot attach-thing-principal --thing-name $THING_NAME --principal $CERT_ARN
         echo "Attached certificate to $THING_NAME"
-        $(aws iot attach-policy --policy-name $THING_POLICY --target $CERT_ARN)
+        aws iot attach-policy --policy-name $THING_POLICY --target $CERT_ARN
         echo "Attached $THING_POLICY to $CERT_ARN"
         if [ $CLIENT_MACHINE = 'y' ]; then    
             mkdir certs
@@ -99,11 +128,16 @@ function associate_thing() {
                 mv $FILE certs/
             done
             scp -r certs $HOST_MACHINE:~/certs
-            $($COMMAND_PREFIX mv certs /etc/pinthesky/certs)
+            $COMMAND_PREFIX mv certs /etc/pinthesky/certs
             echo "Sent $CERT_FILE, $PRV_KEY_FILE, and $CA_CERT to /etc/pinthesky/certs"
             rm -rf certs
+            set_env_val "$COMMAND_PREFIX" "CA_CERT" "/etc/pinthesky/certs/$CA_CERT"
+            set_env_val "$COMMAND_PREFIX" "THING_CERT" "/etc/pinthesky/certs/$CERT_FILE"
+            set_env_val "$COMMAND_PREFIX" "THING_KEY" "/etc/pinthesky/certs/$PRV_KEY_FILE"
         fi
     fi
+    CREDENTIALS_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:CredentialProvider | jq '.endpointAddress' | tr -d '"')
+    set_env_val "$COMMAND_PREFIX" "CREDENTIALS_ENDPOINT" "https://$CREDENTIALS_ENDPOINT"
     echo Finishing provisiong $THING_NAME
 }
 
@@ -121,16 +155,117 @@ function install_pinthesky() {
     fi
 
     echo "Creating /etc/pinthesky"
-    $($COMMAND_PREFIX mkdir -p /etc/pinthesky)
+    $COMMAND_PREFIX mkdir -p /etc/pinthesky
 
     echo "Copying pinthesky.env"
     download_resource pinthesky.env
     if [ $CLIENT_MACHINE = 'y' ]; then
         scp pinthesky.env $HOST_MACHINE:~/
     fi
-    $($COMMAND_PREFIX mv pinthesky.env /etc/pinthesky/pinthesky.env)
+    $COMMAND_PREFIX mv pinthesky.env /etc/pinthesky/pinthesky.env
     rm pinthesky.env
     echo Successfully installed pinthesky software
+}
+
+function configure_storage() {
+    read -p 'Assign an S3 bucket to store motion video capture? [y/n] ' ASSIGN_BUCKET
+    IAM_POLCY_ARN=""
+    if [ $ASSIGN_BUCKET = 'y' ]; then
+        read -p "Bucket name [$USER-motion-videos]: " BUCKET_NAME
+        BUCKET_NAME=${BUCKET_NAME:-"$USER-motion-videos"}
+        aws s3api create-bucket --bucket $BUCKET_NAME
+        read -p "Bucket prefix [$DEFAULT_BUCKET_PREFIX]: " BUCKET_PREFIX
+        BUCKET_PREFIX=${BUCKET_PREFIX:-$DEFAULT_BUCKET_PREFIX}
+        set_env_val "$COMMAND_PREFIX" "BUCKET_NAME" "$BUCKET_NAME"
+        set_env_val "$COMMAND_PREFIX" "BUCKET_PREFIX" "$BUCKET_PREFIX"
+
+        ACCOUNT=$(aws sts get-caller-identity | jq '.Account' | tr -d '"')
+        POLICY_NAME="$BUCKET_NAME-policy"
+        POLICY_ARN="arn:aws:iam::$ACCOUNT:policy/$POLICY_NAME"
+        IAM_POLICY_OUTPUT=$(aws iam get-policy --policy-arn $POLICY_ARN 2>/dev/null)
+        if [ $(echo $?) -ne 0 ]; then
+            download_resource default.iam.policy.json
+            sed -i "s|BUCKET_NAME|$BUCKET_NAME|" default.iam.policy.json        
+            sed -i "s|BUCKET_PREFIX|$BUCKET_PREFIX|" default.iam.policy.json        
+
+            IAM_POLICY_OUTPUT=$(aws iam create-policy --policy-name $POLICY_NAME --policy-document file://default.iam.policy.json)
+            rm default.iam.policy.json 
+        fi
+        IAM_POLCY_ARN=$(echo $IAM_POLICY_OUTPUT | jq '.Policy.Arn' | tr -d '"')
+    fi
+    echo IAM_POLCY_ARN
+}
+
+function configure_events() {
+    local COMMAND_PREFIX=$1
+
+    read -p "The pinthesky service supports file IPC. Do you want to configure that now? [y/n] " CONFIGURE_IPC
+    if [ $CONFIGURE_IPC = 'y' ]; then
+        for EVENT_TYPE in input output; do
+            VAR_NME="DEFAULT_EVENT_${EVENT_TYPE^^}"
+            VAR_VAL=${!VAR_NME}
+            read -p "Event $EVENT_TYPE location [$VAR_VAL]: " EVENT_USER_INPUT
+            EVENT_USER_INPUT=${EVENT_USER_INPUT:-$VAR_VAL}
+            EVENT_USER_BASE=$(dirname $EVENT_USER_INPUT)
+            $COMMAND_PREFIX mkdir -p ${EVENT_USER_BASE}
+            echo "Created $EVENT_USER_BASE"
+            $COMMAND_PREFIX touch ${EVENT_USER_INPUT}
+            echo "Created empty $EVENT_USER_INPUT"
+            set_env_val "$COMMAND_PREFIX" "EVENT_${EVENT_TYPE^^}" "$EVENT_USER_INPUT"
+        done
+    fi
+}
+
+function configure_camera() {
+    local COMMAND_PREFIX=$1
+
+    read -p "Set the camera combination directory [$DEFAULT_COMBINE_DIR]: " COMBINE_DIR
+    COMBINE_DIR=${COMBINE_DIR:-$DEFAULT_COMBINE_DIR}
+    $COMMAND_PREFIX mkdir -p ${COMBINE_DIR}
+    set_env_val "$COMMAND_PREFIX" "COMBINE_DIR" "${COMBINE_DIR}"
+    for CAMERA_FIELD in buffer sensitivity framerate rotation resolution; do
+        VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
+        VAR_VAL=${!VAR_NME}
+        read -p "Set the camera $CAMERA_FIELD field [$VAR_VAL]: " USER_INPUT
+        USER_INPUT=${USER_INPUT:-$VAR_VAL}
+        set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}" "$VAR_VAL"
+    done
+}
+
+function configure_service() {
+    local CLIENT_MACHINE=$1
+    local HOST_MACHINE=$2
+    local COMMAND_PREFIX=$3
+
+    read -p "Install pinthesky as a system service? [y/n] " INSTALL_SERVICE
+    if [ $INSTALL_SERVICE = 'y' ]; then
+        download_resource pinthesky.service
+        if [ $CLIENT_MACHINE = 'y' ]; then
+            scp pinthesky.service $HOST_MACHINE:~/
+        fi
+        $COMMAND_PREFIX mv pinthesky.service /etc/systemd/system/
+        $COMMAND_PREFIX systemctl start pinthesky.service
+        $COMMAND_PREFIX systemctl status pinthesky.service
+        rm pinthesky.service
+        echo "Installed and activated pinthesky.service"
+    fi
+}
+
+function configure_cloud_connection() {
+    local AWS_CLI=$1
+    local $CLIENT_MACHINE=$2
+    local HOST_MACHINE=$3
+    local COMMAND_PREFIX=$4
+
+    if [ -z $AWS_CLI ]; then
+        echo "The AWS CLI is not installed. Skipping storage and AWS IoT Thing association."
+    else
+        read -p 'Associate to an AWS IoT Thing? [y/n] ' ASSOCIATE_THING
+        if [ $ASSOCIATE_THING = 'y' ]; then
+            IAM_POLCY_ARN=$(configure_storage)    
+            associate_thing "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX" "$IAM_POLCY_ARN"
+        fi
+    fi
 }
 
 banner
@@ -148,13 +283,11 @@ if [ $ASSUME_ROOT = 'y' ]; then
     COMMAND_PREFIX="$COMMAND_PREFIX sudo"
 fi
 
+# TODO: add commands for a manage script, post install
 install_pinthesky "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
-
-if [ -z $AWS_CLI ]; then
-    echo "The AWS CLI is not installed. Finished"
-else
-    read -p 'Associate to an AWS IoT Thing? [y/n] ' ASSOCIATE_THING
-    if [ $ASSOCIATE_THING = 'y' ]; then
-        associate_thing "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
-    fi
-fi
+configure_cloud_connection "$AWS_CLI" "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+configure_events "$COMMAND_PREFIX"
+echo "Alomst done! Let's take a look at the camera configuration itself."
+configure_camera "$COMMAND_PREFIX"
+configure_service "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+echo "Finished configuring pinthesky! Enjoy!"

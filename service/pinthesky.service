@@ -1,6 +1,10 @@
 [Unit]
 Description=Pi In the Sky Device Service
 
+[Install]
+WantedBy=multi-user.target
+Alias=pinthesky.service
+
 [Service]
 EnvironmentFile=/etc/pinthesky/pinthesky.env
 ExecStart=/usr/local/bin/pinthesky \
