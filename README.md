@@ -18,5 +18,5 @@ You can also use the guided install from your work station to remotely configure
 1. Run `sh` locally to enter the guide:
 
 ```
-curl https://raw.githubusercontent.com/philcali/pits-device/main/service/install.sh | sh
+wget https://raw.githubusercontent.com/philcali/pits-device/main/service/install.sh && sh install.sh && rm install.sh
 ```
