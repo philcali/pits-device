@@ -22,7 +22,7 @@ PRV_KEY_FILE="thing.key"
 PUB_KEY_FILE="thing.pub"
 CA_CERT="AmazonRootCA1.pem"
 
-function banner() {
+banner() {
     echo "
 ########################################################
 
@@ -40,7 +40,7 @@ function banner() {
     echo "Welcome to the guided install of the pinthesky device!"
 }
 
-function download_resource() {
+download_resource() {
     local RESOURCE_FILE=$1
 
     if [ -f "service/$RESOURCE_FILE" ]; then
@@ -52,7 +52,7 @@ function download_resource() {
     fi
 }
 
-function set_env_val() {
+set_env_val() {
     local COMMAND_PREFIX=$1
     local VAR_NME=$2
     local VAR_VAL=$3
@@ -62,7 +62,7 @@ function set_env_val() {
     echo "Updated pinthesky.env $VAR_NME to $VAR_VAL"
 }
 
-function associate_thing() {
+associate_thing() {
     local CLIENT_MACHINE=$1
     local HOST_MACHINE=$2
     local COMMAND_PREFIX=$3
@@ -141,7 +141,7 @@ function associate_thing() {
     echo Finishing provisiong $THING_NAME
 }
 
-function install_pinthesky() {
+install_pinthesky() {
     local CLIENT_MACHINE=$1
     local HOST_MACHINE=$2
     local COMMAND_PREFIX=$3
@@ -167,7 +167,7 @@ function install_pinthesky() {
     echo Successfully installed pinthesky software
 }
 
-function configure_storage() {
+configure_storage() {
     read -p 'Assign an S3 bucket to store motion video capture? [y/n] ' ASSIGN_BUCKET
     IAM_POLCY_ARN=""
     if [ $ASSIGN_BUCKET = 'y' ]; then
@@ -196,7 +196,7 @@ function configure_storage() {
     echo IAM_POLCY_ARN
 }
 
-function configure_events() {
+configure_events() {
     local COMMAND_PREFIX=$1
 
     read -p "The pinthesky service supports file IPC. Do you want to configure that now? [y/n] " CONFIGURE_IPC
@@ -216,7 +216,7 @@ function configure_events() {
     fi
 }
 
-function configure_camera() {
+configure_camera() {
     local COMMAND_PREFIX=$1
 
     read -p "Set the camera combination directory [$DEFAULT_COMBINE_DIR]: " COMBINE_DIR
@@ -232,7 +232,7 @@ function configure_camera() {
     done
 }
 
-function configure_service() {
+configure_service() {
     local CLIENT_MACHINE=$1
     local HOST_MACHINE=$2
     local COMMAND_PREFIX=$3
@@ -251,7 +251,7 @@ function configure_service() {
     fi
 }
 
-function configure_cloud_connection() {
+configure_cloud_connection() {
     local AWS_CLI=$1
     local $CLIENT_MACHINE=$2
     local HOST_MACHINE=$3
