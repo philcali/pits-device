@@ -2,10 +2,11 @@
 
 AWS_CLI=$(which aws)
 DEFAULT_THING_NAME="PinTheSkyThing"
+DEFAULT_THING_GROUP="PinTheSkyGroup"
 DEFAULT_ROLE_ALIAS_NAME="PinTheSkyRoleAlias"
 DEFAULT_ROLE_NAME="PinTheSkyRole"
 DEFAULT_THING_POLICY_NAME="PinTheSkyThingPolicy"
-DEFAULT_BUCKET_PREFIX="motion_videos"
+DEFAULT_BUCKET_PREFIX="pinthesky/motion_videos"
 DEFAULT_EVENT_INPUT="/usr/share/pinthesky/events/input.json"
 DEFAULT_EVENT_OUTPUT="/usr/share/pinthesky/events/output.json"
 DEFAULT_COMBINE_DIR="/usr/share/pinthesky/motion_videos"
@@ -136,6 +137,18 @@ associate_thing() {
             set_env_val "$COMMAND_PREFIX" "THING_KEY" "/etc/pinthesky/certs/$PRV_KEY_FILE"
         fi
     fi
+    read -p "Add to AWS IoT ThingGroup? [y/n] " ADD_TO_GROUP
+    if [ $ADD_TO_GROUP = 'y' ]; then
+        read -p "ThingGroup to add to [$DEFAULT_THING_GROUP]: " THING_GROUP
+        THING_GROUP=${THING_GROUP:-$DEFAULT_THING_GROUP}
+        THING_GROUP_RESULT=$(aws iot describe-thing-name --thing-group-name $THING_GROUP 2>/dev/null)
+        if [ $(echo $?) -ne 0 ]; then
+            THING_GROUP_RESULT=$(aws iot create-thing-group --thing-group-name $THING_GROUP)
+            echo "Created $THING_GROUP"
+        fi
+        aws iot add-thing-to-thing-group --thing-group $THING_GROUP --thing-name $THING_NAME
+        echo "Associated $THING_NAME to $THING_GROUP"
+    fi
     CREDENTIALS_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:CredentialProvider | jq '.endpointAddress' | tr -d '"')
     set_env_val "$COMMAND_PREFIX" "CREDENTIALS_ENDPOINT" "https://$CREDENTIALS_ENDPOINT"
     echo Finishing provisiong $THING_NAME
@@ -253,7 +266,7 @@ configure_service() {
 
 configure_cloud_connection() {
     local AWS_CLI=$1
-    local $CLIENT_MACHINE=$2
+    local CLIENT_MACHINE=$2
     local HOST_MACHINE=$3
     local COMMAND_PREFIX=$4
 
