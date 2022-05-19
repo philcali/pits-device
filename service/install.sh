@@ -157,6 +157,8 @@ associate_thing() {
     fi
     CREDENTIALS_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:CredentialProvider | jq '.endpointAddress' | tr -d '"')
     set_env_val "$COMMAND_PREFIX" "CREDENTIALS_ENDPOINT" "$CREDENTIALS_ENDPOINT"
+    DATA_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:data-ats | jq '.endpointAddress' | tr -d '"')
+    set_env_val "$COMMAND_PREFIX" "DATA_ENDPOINT" "$DATA_ENDPOINT"
     echo Finishing provisiong $THING_NAME
 }
 
@@ -345,6 +347,6 @@ configure_cloud_connection "$AWS_CLI" "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAN
 configure_events "$COMMAND_PREFIX"
 echo "Alomst done! Let's take a look at the camera configuration itself."
 configure_camera "$COMMAND_PREFIX"
-configure_service "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
 configure_device_client "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+configure_service "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
 echo "Finished configuring pinthesky! Enjoy!"

@@ -42,7 +42,7 @@ EOL
 
 echo "Configuring AWS IoT Device Client"
 . /etc/pinthesky/pinthesky.env
-for replacement in THING_CERT THING_KEY THING_NAME CA_CERT CREDENTIALS_ENDPOINT EVENT_INPUT EVENT_OUTPUT; do
+for replacement in THING_CERT THING_KEY THING_NAME CA_CERT DATA_ENDPOINT EVENT_INPUT EVENT_OUTPUT; do
     sed -i "s|$replacement|${!replacement}|" aws-iot-device-client.json
 done
 mv aws-iot-device-client.json $CONFIG_LOC/

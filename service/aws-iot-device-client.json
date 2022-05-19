@@ -1,5 +1,5 @@
 {
-    "endpoint": "CREDENTIALS_ENDPOINT",
+    "endpoint": "DATA_ENDPOINT",
     "cert": "THING_CERT",
     "key": "THING_KEY",
     "root-ca": "CA_CERT",
