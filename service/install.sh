@@ -107,6 +107,12 @@ associate_thing() {
     POLICY_OUTPUT=$(aws iot get-policy --policy-name $THING_POLICY 2>/dev/null)
     if [ $(echo $?) -ne 0 ]; then
         download_resource default.policy.json
+        PARTITION=$(aws ssm get-paramter --name /aws/service/global-infrastructure/current-region/partition | jq '.Parameter.Value' | tr -d '"')
+        REGION=$(aws ssm get-parameter --name /aws/service/global-infrastracture/current-region | jq '.Parameter.Value' | tr -d '"')
+        ACCOUNT=$(aws sts get-caller-identity | jq '.Account' | tr -d '"')
+        for replacement in PARTITION REGION ACCOUNT; do
+            sed -i "s|$replacement|${!replacement}|" default.policy.json
+        done
         sed -i "s|\"ROLE_ALIAS\"|\"$ROLE_ALIAS_ARN\"|" default.policy.json
         POLICY_OUTPUT=$(aws iot create-policy --policy-name $THING_POLICY --policy-document file://default.policy.json)
         rm default.policy.json
@@ -150,7 +156,7 @@ associate_thing() {
         echo "Associated $THING_NAME to $THING_GROUP"
     fi
     CREDENTIALS_ENDPOINT=$(aws iot describe-endpoint --endpoint-type iot:CredentialProvider | jq '.endpointAddress' | tr -d '"')
-    set_env_val "$COMMAND_PREFIX" "CREDENTIALS_ENDPOINT" "https://$CREDENTIALS_ENDPOINT"
+    set_env_val "$COMMAND_PREFIX" "CREDENTIALS_ENDPOINT" "$CREDENTIALS_ENDPOINT"
     echo Finishing provisiong $THING_NAME
 }
 
@@ -243,6 +249,18 @@ configure_camera() {
         USER_INPUT=${USER_INPUT:-$VAR_VAL}
         set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}" "$VAR_VAL"
     done
+    read -p "Would you like to set a recording window? [y/n] " SET_WINDOW
+    if [ $SET_WINDOW = 'y' ]; then
+        START_HOUR=0
+        END_HOUR=0
+        while [ $START_HOUR -ge $END_HOUR ] || [ $END_HOUR -gt 23 ] || [ $START_HOUR -lt 0 ]; do
+            echo "The valid range must be between 0-23 and the ending hour must be greater than the starting hour."
+            read -p "When should the camera start recording? [0-23] " START_HOUR
+            read -p "When should the camera end the recording? [0-23] " END_HOUR
+        done
+        RECORDING_WINDOW="$START_HOUR-$END_HOUR"
+        set_env_val "$COMMAND_PREFIX" "RECORDING_WINDOW" "$RECORDING_WINDOW"
+    fi
 }
 
 configure_service() {
@@ -281,6 +299,26 @@ configure_cloud_connection() {
     fi
 }
 
+configure_device_client() {
+    local CLIENT_MACHINE=$1
+    local HOST_MACHINE=$2
+    local COMMAND_PREFIX=$3
+    # TODO: move the device client as an arch build and import it
+    echo "WARNING: Building the AWS IoT Device Client may take a very long time to complete on smaller devices!"
+    read -p "Install the AWS IoT Device Client? [y/n] " INSTALL_DEVICE_CLIENT
+    if [ $INSTALL_DEVICE_CLIENT = 'y' ]; then
+        download_resource install_device_client.sh
+        download_resource aws-iot-device-client.json
+        chmod +x install_device_client.sh
+        if [ $CLIENT_MACHINE = 'y' ]; then
+            scp install_device_client.sh $HOST_MACHINE:~/install_device_client.sh
+            scp aws-iot-device-client.json $HOST_MACHINE:~/aws-iot-device-client.json
+        fi
+        $COMMAND_PREFIX ./install_device_client.sh
+        rm aws-iot-device-client.json install_device_client.sh
+    fi
+}
+
 banner
 
 read -p 'Are you running the install from a client machine? [y/n] ' CLIENT_MACHINE
@@ -296,6 +334,11 @@ if [ $ASSUME_ROOT = 'y' ]; then
     COMMAND_PREFIX="$COMMAND_PREFIX sudo"
 fi
 
+DRYRUN=${DRYRUN:-0}
+if [ $DRYRUN -eq 1 ]; then
+    COMMAND_PREFIX="echo $COMMAND_PREFIX"
+fi
+
 # TODO: add commands for a manage script, post install
 install_pinthesky "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
 configure_cloud_connection "$AWS_CLI" "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
@@ -303,4 +346,5 @@ configure_events "$COMMAND_PREFIX"
 echo "Alomst done! Let's take a look at the camera configuration itself."
 configure_camera "$COMMAND_PREFIX"
 configure_service "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+configure_device_client "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
 echo "Finished configuring pinthesky! Enjoy!"

@@ -1,0 +1,20 @@
+{
+    "endpoint": "CREDENTIALS_ENDPOINT",
+    "cert": "THING_CERT",
+    "key": "THING_KEY",
+    "root-ca": "CA_CERT",
+    "thing-name": "THING_NAME",
+    "logging": {
+        "level": "INFO",
+        "type": "STDOUT"
+    },
+    "samples": {
+        "pub-sub": {
+            "enabled": true,
+            "publish-topic": "pinthesky/events/output",
+            "publish-file": "EVENT_OUTPUT",
+            "subscribe-topic": "pinthesky/events/THING_NAME/input",
+            "subscribe-file": "EVENT_INPUT"
+        }
+    }
+}

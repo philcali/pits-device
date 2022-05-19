@@ -4,22 +4,40 @@
         {
             "Effect": "Allow",
             "Action": "iot:Connect",
-            "Resource": "*"
+            "Resource": "arn:PARTITION:iot:REGION:ACCOUNT:client/${iot:Connection.Thing.ThingName}"
         },
         {
             "Effect": "Allow",
             "Action": "iot:Publish",
-            "Resource": "*"
+            "Resource": [
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/pinthesky/events/output",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/start-next",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update"
+            ]
         },
         {
             "Effect": "Allow",
             "Action": "iot:Subscribe",
-            "Resource": "*"
+            "Resource": [
+                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/pinthesky/events/${iot:Connection.Thing.ThingName}/input",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/start-next/accepted",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/start-next/rejected",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update/accepted",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update/rejected",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/notify-next"
+            ]
         },
         {
             "Effect": "Allow",
             "Action": "iot:Receive",
-            "Resource": "*"
+            "Resource": [
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/pinthesky/events/${iot:Connection.Thing.ThingName}/input",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/start-next/accepted",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/start-next/rejected",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update/accepted",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update/rejected",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/notify-next"
+            ]
         },
         {
             "Effect": "Allow",
