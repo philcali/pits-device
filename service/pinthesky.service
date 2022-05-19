@@ -23,5 +23,6 @@ ExecStart=/usr/local/bin/pinthesky \
     --thing-cert $THING_CERT \
     --thing-key $THING_KEY \
     --ca-cert $CA_CERT \
-    --credentials-endpoint $CREDENTIALS_ENDPOINT
-Restart=on-failure
+    --credentials-endpoint $CREDENTIALS_ENDPOINT \
+    --recording-window $RECORDING_WINDOW
+Restart=always

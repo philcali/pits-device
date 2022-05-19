@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging
 import picamera
 import picamera.array
@@ -26,7 +27,7 @@ class MotionDetector(picamera.array.PiMotionAnalysis):
 
 
 class CameraThread(threading.Thread, Handler):
-    def __init__(self, events, sensitivity=10, resolution=(640, 480), framerate=20, rotation=270, buffer=15):
+    def __init__(self, events, sensitivity=10, resolution=(640, 480), framerate=20, rotation=270, buffer=15, recording_window=None):
         super().__init__(daemon=True)
         self.running = True
         self.flushing_stream = False
@@ -39,6 +40,9 @@ class CameraThread(threading.Thread, Handler):
         self.camera.framerate = framerate
         self.camera.rotation = rotation
         self.historical_stream = picamera.PiCameraCircularIO(self.camera, seconds=self.buffer)
+        self.recording_window = recording_window
+        if recording_window is not None:
+            self.start_window, self.end_window = map(int, recording_window.split('-'))
 
     
     def on_motion_start(self, event):
@@ -62,14 +66,35 @@ class CameraThread(threading.Thread, Handler):
 
     def run(self):
         logger.info('Starting camera thread')
-        self.camera.start_recording(
-            self.historical_stream,
-            format='h264',
-            motion_output=MotionDetector(self.camera, self.events, sensitivity=self.sensitivity))
+        self.resume()
         while self.running:
+            if not self.flushing_stream and self.recording_window:
+                now = datetime.now()
+                if now.hour < self.start_window or now.hour > self.end_window:
+                    self.pause()
+                    time.sleep(1)
+                    continue
+                else:
+                    self.resume()
             self.camera.wait_recording(1)
             if self.flushing_stream:
                 self.flush_video()
+
+
+    def pause(self):
+        if self.camera.recording:
+            self.camera.stop_recording()
+            self.historical_stream.clear()
+            logger.info("Camera recording is now paused")
+
+
+    def resume(self):
+        if not self.camera.recording:
+            self.camera.start_recording(
+                self.historical_stream,
+                format='h264',
+                motion_output=MotionDetector(self.camera, self.events, sensitivity=self.sensitivity))
+            logger.info("Camera is now recording")
 
 
     def stop(self):

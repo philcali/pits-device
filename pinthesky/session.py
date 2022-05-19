@@ -16,6 +16,8 @@ class Session():
         self.credentials_endpoint = credentials_endpoint
         self.credentials = None
         self.refresh_lock = threading.Lock()
+        if "https://" not in credentials_endpoint:
+            self.credentials_endpoint = f'https://{credentials_endpoint}'
 
 
     def parse_time(expiration):

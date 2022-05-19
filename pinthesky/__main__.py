@@ -69,6 +69,10 @@ def create_parser():
     parser.add_argument("--bucket-prefix",
         help="the S3 bucket prefix to upload the motion files to, default motion_videos",
         default="motion_videos")
+    parser.add_argument("--recording-window",
+        help="the recording window for the camera relative to the host time, ie: '08-18' for a ten hour window, defaults to always recordding",
+        required=False,
+        default=None)
     return parser
 
 
@@ -98,7 +102,8 @@ def main():
         sensitivity=parsed.sensitivity,
         resolution=tuple(map(int, parsed.resolution.split('x'))),
         rotation=parsed.rotation,
-        framerate=parsed.framerate)
+        framerate=parsed.framerate,
+        recording_window=parsed.recording_window)
     video_combiner = combiner.VideoCombiner(
         events=events,
         combine_dir=parsed.combine_dir)
