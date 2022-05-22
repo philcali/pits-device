@@ -16,5 +16,11 @@
             "subscribe-topic": "pinthesky/events/THING_NAME/input",
             "subscribe-file": "EVENT_INPUT"
         }
+    },
+    "sample-shadow": {
+        "enabled": true,
+        "shadow-name": "pinthesky",
+        "shadow-input-file": "CONFIGURE_INPUT",
+        "shadow-output-file": "CONFIGURE_OUTPUT"
     }
 }
