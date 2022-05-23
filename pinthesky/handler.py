@@ -14,3 +14,7 @@ class Handler():
 
     def on_upload_end(self, event):
         pass
+
+
+    def on_file_change(self, event):
+        pass

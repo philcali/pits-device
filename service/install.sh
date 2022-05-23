@@ -376,7 +376,7 @@ configure_device_client() {
             scp aws-iot-device-client.json $HOST_MACHINE:~/aws-iot-device-client.json
         fi
         $COMMAND_PREFIX ./install_device_client.sh
-        rm aws-iot-device-client.json install_device_client.sh
+        $COMMAND_PREFIX rm install_device_client.sh aws-iot-device-client.json
         printf $GREEN "Installed aws-iot-device-client as a service"
     fi
 }

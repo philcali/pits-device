@@ -38,6 +38,12 @@ def create_parser():
     parser.add_argument("--event-output",
         help="file representing external output, default output.json",
         default="output.json")
+    parser.add_argument("--configure-input",
+        help="file representing external configuration input, default config-input.json",
+        default="config-input.json")
+    parser.add_argument("--configure-output",
+        help="file representing external configuration output, default config-output.json",
+        default="config-output.json")
     parser.add_argument("--thing-name",
         help="the AWS IoT ThingName for use in upload",
         default=None,
@@ -81,9 +87,7 @@ def main():
     # TODO: make this externally configurable
     pinthesky.set_stream_logger("pinthesky", level=logging.INFO)
     event_thread = events.EventThread()
-    input_thread = input.InputThread(
-        events=event_thread,
-        input_file=parsed.event_input)
+    notify_thread = input.INotifyThread(events=event_thread)
     event_output = output.Output(output_file=parsed.event_output)
     auth_session = session.Session(
         cacert_path=parsed.ca_cert,
@@ -98,24 +102,29 @@ def main():
         bucket_prefix=parsed.bucket_prefix,
         session=auth_session)
     camera_thread = CameraThread(
-        events=events,
+        events=event_thread,
         sensitivity=parsed.sensitivity,
         resolution=tuple(map(int, parsed.resolution.split('x'))),
         rotation=parsed.rotation,
         framerate=parsed.framerate,
         recording_window=parsed.recording_window)
     video_combiner = combiner.VideoCombiner(
-        events=events,
+        events=event_thread,
         combine_dir=parsed.combine_dir)
+    event_input_handler = input.InputHandler(events=event_thread)
     event_thread.on(camera_thread)
     event_thread.on(video_combiner)
     event_thread.on(video_uploader)
     event_thread.on(event_output)
+    event_thread.on(event_input_handler)
+    event_thread.on(auth_session)
+    notify_thread.notify_change(parsed.event_input)
+    notify_thread.notify_change(parsed.configure_output)
     event_thread.start()
     camera_thread.start()
-    input_thread.start()
+    notify_thread.start()
     def signal_handler(signum, frame):
-        input_thread.stop()
+        notify_thread.stop()
         camera_thread.stop()
         event_thread.stop()
     signal.signal(signalnum=signal.SIGINT, handler=signal_handler)

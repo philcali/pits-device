@@ -41,8 +41,13 @@ class CameraThread(threading.Thread, Handler):
         self.camera.rotation = rotation
         self.historical_stream = picamera.PiCameraCircularIO(self.camera, seconds=self.buffer)
         self.recording_window = recording_window
-        if recording_window is not None:
-            self.start_window, self.end_window = map(int, recording_window.split('-'))
+        self.configuration_lock = threading.Lock()
+        self.set_recording_window()
+
+
+    def set_recording_window(self):
+        if self.recording_window is not None:
+            self.start_window, self.end_window = map(int, self.recording_window.split('-'))
 
     
     def on_motion_start(self, event):
@@ -52,16 +57,40 @@ class CameraThread(threading.Thread, Handler):
             self.flushing_stream = True
 
 
+    def on_file_change(self, event):
+        if "current" in event["content"]:
+            cam_obj = event["content"]["current"]["state"]["desired"]["camera"]
+            # Hold potentially dangerous mutations if the camera is flushing
+            with self.configuration_lock:
+                self.pause()
+                # Update wrapper fields
+                for field in ["buffer", "sensitivity", "recording_window"]:
+                    if field in cam_obj:
+                        setattr(self, field, cam_obj[field])
+                        if field == "recording_window":
+                            self.set_recording_window()
+                # Update picamera fields
+                for field in ["rotation", "resolution", "framerate"]:
+                    if field in cam_obj:
+                        val = cam_obj[field]
+                        if field == "resolution":
+                            val = tuple(map(int, val.split("x")))
+                        setattr(self.camera, field, val)
+                self.resume()
+
+
     def flush_video(self):
-        self.camera.split_recording(f'{self.flushing_timestamp}.after.h264')
-        self.historical_stream.copy_to(f'{self.flushing_timestamp}.before.h264')
-        self.historical_stream.clear()
-        time.sleep(self.buffer)
-        self.camera.split_recording(self.historical_stream)
-        self.flushing_stream = False
-        self.events.fire_event('flush_end', {
-            'start_time': self.flushing_timestamp
-        })
+        # Want to flush when it is safe to flush
+        with self.configuration_lock:
+            self.camera.split_recording(f'{self.flushing_timestamp}.after.h264')
+            self.historical_stream.copy_to(f'{self.flushing_timestamp}.before.h264')
+            self.historical_stream.clear()
+            time.sleep(self.buffer)
+            self.camera.split_recording(self.historical_stream)
+            self.flushing_stream = False
+            self.events.fire_event('flush_end', {
+                'start_time': self.flushing_timestamp
+            })
 
 
     def run(self):
@@ -90,6 +119,7 @@ class CameraThread(threading.Thread, Handler):
 
     def resume(self):
         if not self.camera.recording:
+            self.historical_stream = picamera.PiCameraCircularIO(self.camera, seconds=self.buffer)
             self.camera.start_recording(
                 self.historical_stream,
                 format='h264',

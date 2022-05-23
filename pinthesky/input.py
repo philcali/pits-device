@@ -3,39 +3,72 @@ import logging
 import os
 import threading
 
+from pinthesky.handler import Handler
 from inotify_simple import INotify, flags
 
 logger = logging.getLogger(__name__)
 
 
-class InputThread(threading.Thread):
-    def __init__(self, events, input_file, inotify=None):
+class INotifyThread(threading.Thread):
+    def __init__(self, events, inotify=None):
         super().__init__(daemon=True)
-        self.input_file = input_file
         self.running = True
         self.inotify = inotify or INotify()
         self.events = events
-        if not os.path.exists(input_file):
-            with open(self.input_file, 'w') as f:
+        self.handlers = {}
+
+
+    def touch_empty(self, file_name):
+        if not os.path.exists(file_name):
+            with open(file_name, 'w') as f:
                 f.write('{}')
 
 
-    def fire_event(self):
-        with open(self.input_file, 'r') as f:
-            js = json.loads(f.read())
-            self.events.fire_event(js['name'], js['context'])
+    def watch_file(self, file_name):
+        watch_flags = flags.CREATE | flags.MODIFY
+        logger.info(f'Watching input for {file_name}')
+        return self.inotify.add_watch(file_name, watch_flags)
 
     
+    def notify_change(self, file_name):
+        if file_name not in self.handlers:
+            self.touch_empty()
+            self.handlers[file_name] = self.watch_file(file_name)
+
+
+    def fire_event(self, event):
+        file_name = None
+        for name, wd in self.handlers.items():
+            if event.wd == wd:
+                file_name = name
+        if file_name is not None:
+            with open(file_name, 'r') as f:
+                js = json.loads(f.read())
+                self.events.fire_event('file_change', {
+                    'file_name': file_name,
+                    'content': js
+                })
+
+
     def run(self):
-        logger.info(f'Watching input for {self.input_file}')
-        watch_flags = flags.CREATE | flags.MODIFY
-        self.watched = self.inotify.add_watch(self.input_file, watch_flags)
         while self.running:
             for event in self.inotify.read():
                 if flags.from_mask(event.mask) is flags.CREATE | flags.MODIFY:
-                    self.fire_event()                    
+                    self.fire_event(event)
 
-    
+
     def stop(self):
         self.running = False
-        self.inotify.rm_watch(self.watched)
+        for watched in self.watched:
+            self.inotify.rm_watch(watched)
+
+
+class InputHandler(Handler):
+    def __init__(self, events):
+        self.events = events
+        pass
+
+
+    def on_file_change(self, event):
+        if "name" in event['content'] and "context" in event['content']:
+            self.events.fire_event(event['content']['name'], event['content']['context'])

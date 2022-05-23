@@ -8,7 +8,7 @@ from functools import partial
 from pinthesky.handler import Handler
 
 logger = logging.getLogger(__name__)
-event_names = ['motion_start', 'flush_end', 'combine_end', 'upload_end']
+event_names = ['motion_start', 'flush_end', 'combine_end', 'upload_end', 'file_change']
 
 class EventThread(threading.Thread):
     def __init__(self):

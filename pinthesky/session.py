@@ -1,4 +1,4 @@
-from cmath import e
+from pinthesky.handler import Handler
 from requests import request, exceptions
 import datetime
 import logging
@@ -6,7 +6,7 @@ import threading
 
 logger = logging.getLogger(__name__)
 
-class Session():
+class Session(Handler):
     def __init__(self, cert_path, key_path, cacert_path, thing_name, role_alias, credentials_endpoint):
         self.cert_path = cert_path
         self.key_path = key_path
@@ -16,12 +16,29 @@ class Session():
         self.credentials_endpoint = credentials_endpoint
         self.credentials = None
         self.refresh_lock = threading.Lock()
-        if "https://" not in credentials_endpoint:
-            self.credentials_endpoint = f'https://{credentials_endpoint}'
+        self.set_endpoint(credentials_endpoint)
+
+
+    def set_endpoint(self, endpoint):
+        if "https://" not in endpoint:
+            self.credentials_endpoint = f'https://{endpoint}'
 
 
     def parse_time(expiration):
         return datetime.datetime.strptime(expiration, "%Y-%m-%dT%H:%M:%SZ")
+
+
+    def on_file_change(self, event):
+        if "current" in event["content"]:
+            con = event["content"]["current"]["state"]["desired"]["cloud_connection"]
+            with self.refresh_lock:
+                for field in ["cert_path", "key_path", "cacert_path", "thing_name", "role_alias", "credentials_endpoint"]:
+                    if field in con:
+                        val = con[field]
+                        if field == "credentials_endpoint":
+                            self.set_endpoint(val)
+                        else:
+                            setattr(self, field, con[field])
 
 
     def login(self, force=False):
