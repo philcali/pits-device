@@ -34,7 +34,7 @@ class INotifyThread(threading.Thread):
         logger.info(f'Watching input for {file_name}')
         return self.inotify.add_watch(file_name, watch_flags)
 
- 
+
     def __fire_event(self, event):
         file_name = None
         for name, wd in self.handlers.items():
@@ -72,7 +72,6 @@ class InputHandler(Handler):
     '''
     An INotify handler that watches to files who content translate into runtime events
     '''
-    
     def __init__(self, events):
         self.events = events
         pass
