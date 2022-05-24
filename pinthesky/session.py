@@ -7,6 +7,9 @@ import threading
 logger = logging.getLogger(__name__)
 
 class Session(Handler):
+    '''
+    An auth session wrapper that caches AWS credential material for as long as it can.
+    '''
     def __init__(self, cert_path, key_path, cacert_path, thing_name, role_alias, credentials_endpoint):
         self.cert_path = cert_path
         self.key_path = key_path
@@ -16,15 +19,15 @@ class Session(Handler):
         self.credentials_endpoint = credentials_endpoint
         self.credentials = None
         self.refresh_lock = threading.Lock()
-        self.set_endpoint(credentials_endpoint)
+        self.__set_endpoint(credentials_endpoint)
 
 
-    def set_endpoint(self, endpoint):
+    def __set_endpoint(self, endpoint):
         if "https://" not in endpoint:
             self.credentials_endpoint = f'https://{endpoint}'
 
 
-    def parse_time(expiration):
+    def __parse_time(expiration):
         return datetime.datetime.strptime(expiration, "%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -36,14 +39,14 @@ class Session(Handler):
                     if field in con:
                         val = con[field]
                         if field == "credentials_endpoint":
-                            self.set_endpoint(val)
+                            self.__set_endpoint(val)
                         else:
                             setattr(self, field, con[field])
 
 
     def login(self, force=False):
         current_time = datetime.datetime.now()
-        if force or self.credentials is None or self.parse_time(self.credentials['expiration']) < current_time:
+        if force or self.credentials is None or self.__parse_time(self.credentials['expiration']) < current_time:
             with self.refresh_lock:
                 try: 
                     self.credentials = None

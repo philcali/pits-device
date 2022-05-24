@@ -196,8 +196,9 @@ install_pinthesky() {
     local COMMAND_PREFIX=$3
 
     PINTHESKY_VERSION=$($COMMAND_PREFIX which pinthesky)
-    if [ -z $PINTHESKY_VERSION ]; then
-        $($COMMAND_PREFIX pip3 install $INSTALL_VERSION)
+    if [ -z "$PINTHESKY_VERSION" ]; then
+        echo "Could not detect a version of pinthesky, installing..."
+        $COMMAND_PREFIX pip3 install $INSTALL_VERSION
         printf $GREEN "Successfully installed pinthesky."
     else
         echo "A version of pinthesky is already installed at $PINTHESKY_VERSION. To upgrade run:"
@@ -209,7 +210,7 @@ install_pinthesky() {
 
     download_resource pinthesky.env
     local env_location="/etc/pinthesky/pinthesky.env"
-    if [ $CLIENT_MACHINE = 'y' ]; then
+    if [ "$CLIENT_MACHINE" = 'y' ]; then
         scp pinthesky.env $HOST_MACHINE:~/
     fi
     $COMMAND_PREFIX mv pinthesky.env $env_location
@@ -258,6 +259,7 @@ configure_storage() {
             rm default.iam.policy.json 
         fi
         IAM_POLCY_ARN=$(echo $IAM_POLICY_OUTPUT | jq '.Policy.Arn' | tr -d '"')
+        printf $GREEN "Successfully configured storage"
     fi
 }
 
@@ -305,19 +307,20 @@ configure_camera() {
     done
     printf $PMPT "Would you like to set a recording window? [y/n]"
     read -r SET_WINDOW
+    RECORDING_WINDOW="0-23"
     if [ "$SET_WINDOW" = 'y' ]; then
         START_HOUR=0
         END_HOUR=0
         while [ $START_HOUR -ge $END_HOUR ] || [ $END_HOUR -gt 23 ] || [ $START_HOUR -lt 0 ]; do
             echo "The valid range must be between 0-23 and the ending hour must be greater than the starting hour."
-            printf $PMPT "When should the camera start recording? [0-23]"
+            printf $PMPT "When should the camera start recording? [0]"
             read -r START_HOUR
-            printf $PMPT "When should the camera end the recording? [0-23]"
+            printf $PMPT "When should the camera end the recording? [23]"
             read -r END_HOUR
         done
         RECORDING_WINDOW="$START_HOUR-$END_HOUR"
-        set_env_val "$COMMAND_PREFIX" "RECORDING_WINDOW" "$RECORDING_WINDOW"
     fi
+    set_env_val "$COMMAND_PREFIX" "RECORDING_WINDOW" "$RECORDING_WINDOW"
 }
 
 configure_service() {
@@ -353,7 +356,6 @@ configure_cloud_connection() {
         read -r ASSOCIATE_THING
         if [ $ASSOCIATE_THING = 'y' ]; then
             configure_storage
-            printf $GREEN "Successfully configured storage"
             associate_thing "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX" "$IAM_POLCY_ARN"
         fi
     fi
@@ -374,9 +376,10 @@ configure_device_client() {
         if [ $CLIENT_MACHINE = 'y' ]; then
             scp install_device_client.sh $HOST_MACHINE:~/install_device_client.sh
             scp aws-iot-device-client.json $HOST_MACHINE:~/aws-iot-device-client.json
+            rm install_device_client.sh aws-iot-device-client.json
         fi
         $COMMAND_PREFIX ./install_device_client.sh
-        $COMMAND_PREFIX rm install_device_client.sh aws-iot-device-client.json
+        $COMMAND_PREFIX rm install_device_client.sh
         printf $GREEN "Installed aws-iot-device-client as a service"
     fi
 }

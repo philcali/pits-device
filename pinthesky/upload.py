@@ -7,6 +7,10 @@ from pinthesky.handler import Handler
 logger = logging.getLogger(__name__)
 
 class S3Upload(Handler):
+    '''
+    Handles the `combine_end` to flush the video content to a specific path by thing name.
+    Note: if the session is not connected to a remote IoT Thing, then this handle does nothing.
+    '''
     def __init__(self, events, bucket_name, bucket_prefix, session):
         self.events = events
         self.bucket_name = bucket_name

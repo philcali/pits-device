@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class INotifyThread(threading.Thread):
+    '''
+    Wrapper class for an INotify watcher. The thread polls events externally configured, and
+    pumps changes back into the EventThread. Subscribers are notified via the `file_change` event.
+    '''
+
     def __init__(self, events, inotify=None):
         super().__init__(daemon=True)
         self.running = True
@@ -18,25 +23,19 @@ class INotifyThread(threading.Thread):
         self.handlers = {}
 
 
-    def touch_empty(self, file_name):
+    def __touch_empty(self, file_name):
         if not os.path.exists(file_name):
             with open(file_name, 'w') as f:
                 f.write('{}')
 
 
-    def watch_file(self, file_name):
+    def __watch_file(self, file_name):
         watch_flags = flags.CREATE | flags.MODIFY
         logger.info(f'Watching input for {file_name}')
         return self.inotify.add_watch(file_name, watch_flags)
 
-    
-    def notify_change(self, file_name):
-        if file_name not in self.handlers:
-            self.touch_empty()
-            self.handlers[file_name] = self.watch_file(file_name)
-
-
-    def fire_event(self, event):
+ 
+    def __fire_event(self, event):
         file_name = None
         for name, wd in self.handlers.items():
             if event.wd == wd:
@@ -50,11 +49,17 @@ class INotifyThread(threading.Thread):
                 })
 
 
+    def notify_change(self, file_name):
+        if file_name not in self.handlers:
+            self.__touch_empty(file_name)
+            self.handlers[file_name] = self.__watch_file(file_name)
+
+
     def run(self):
         while self.running:
             for event in self.inotify.read():
                 if flags.from_mask(event.mask) is flags.CREATE | flags.MODIFY:
-                    self.fire_event(event)
+                    self.__fire_event(event)
 
 
     def stop(self):
@@ -64,6 +69,10 @@ class INotifyThread(threading.Thread):
 
 
 class InputHandler(Handler):
+    '''
+    An INotify handler that watches to files who content translate into runtime events
+    '''
+    
     def __init__(self, events):
         self.events = events
         pass

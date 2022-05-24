@@ -11,6 +11,10 @@ from pinthesky.handler import Handler
 logger = logging.getLogger(__name__)
 
 class MotionDetector(picamera.array.PiMotionAnalysis):
+    '''
+    Adapted motion detection class from the PiCamera documentation.
+    Performs vactor calculation on a sensitivity threshold.
+    '''
     def __init__(self, camera, events, sensitivity=10, size=None):
         super(MotionDetector, self).__init__(camera, size)
         self.events = events
@@ -42,14 +46,14 @@ class CameraThread(threading.Thread, Handler):
         self.historical_stream = picamera.PiCameraCircularIO(self.camera, seconds=self.buffer)
         self.recording_window = recording_window
         self.configuration_lock = threading.Lock()
-        self.set_recording_window()
+        self.__set_recording_window()
 
 
-    def set_recording_window(self):
+    def __set_recording_window(self):
         if self.recording_window is not None:
             self.start_window, self.end_window = map(int, self.recording_window.split('-'))
 
-    
+
     def on_motion_start(self, event):
         if not self.flushing_stream:
             logger.debug(f'Starting a flush on motion event from {event["timestamp"]}')
@@ -68,7 +72,7 @@ class CameraThread(threading.Thread, Handler):
                     if field in cam_obj:
                         setattr(self, field, cam_obj[field])
                         if field == "recording_window":
-                            self.set_recording_window()
+                            self.__set_recording_window()
                 # Update picamera fields
                 for field in ["rotation", "resolution", "framerate"]:
                     if field in cam_obj:
@@ -79,7 +83,7 @@ class CameraThread(threading.Thread, Handler):
                 self.resume()
 
 
-    def flush_video(self):
+    def __flush_video(self):
         # Want to flush when it is safe to flush
         with self.configuration_lock:
             self.camera.split_recording(f'{self.flushing_timestamp}.after.h264')
@@ -107,7 +111,7 @@ class CameraThread(threading.Thread, Handler):
                     self.resume()
             self.camera.wait_recording(1)
             if self.flushing_stream:
-                self.flush_video()
+                self.__flush_video()
 
 
     def pause(self):

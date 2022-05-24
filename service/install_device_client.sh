@@ -5,7 +5,7 @@ mkdir -p $CONFIG_LOC
 
 echo "Installing Dependencies"
 sudo apt-get update -q
-sudo apt-get install -y \
+sudo apt-get install -yq \
     git \
     cmake \
     g++ \
@@ -42,7 +42,7 @@ EOL
 
 echo "Configuring AWS IoT Device Client"
 . /etc/pinthesky/pinthesky.env
-for replacement in THING_CERT THING_KEY THING_NAME CA_CERT DATA_ENDPOINT EVENT_INPUT EVENT_OUTPUT; do
+for replacement in THING_CERT THING_KEY THING_NAME CA_CERT DATA_ENDPOINT EVENT_INPUT EVENT_OUTPUT CONFIURE_INPUT CONFIGURE_OUTPUT; do
     sed -i "s|$replacement|${!replacement}|" aws-iot-device-client.json
 done
 mv aws-iot-device-client.json $CONFIG_LOC/

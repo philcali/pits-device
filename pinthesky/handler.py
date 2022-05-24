@@ -1,5 +1,9 @@
 
 class Handler():
+    '''
+    Base handler that provides all of the methods to implement
+    '''
+
     def on_combine_end(self, event):
         pass
 
