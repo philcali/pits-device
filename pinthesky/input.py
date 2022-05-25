@@ -39,11 +39,18 @@ class INotifyThread(threading.Thread):
                 file_name = name
         if file_name is not None:
             with open(file_name, 'r') as f:
-                js = json.loads(f.read())
+                content = f.read()
+                if content == "":
+                    logger.debug(f'The {file_name} was zeroed out. Skipping.')
+                    return
+                js = json.loads(content)
                 self.events.fire_event('file_change', {
                     'file_name': file_name,
                     'content': js
                 })
+            with open(file_name, 'w') as f:
+                f.write("")
+            logger.info(f'Zeroing out {file_name} for further use')
 
     def notify_change(self, file_name):
         if file_name not in self.handlers:
@@ -53,7 +60,8 @@ class INotifyThread(threading.Thread):
     def run(self):
         while self.running:
             for event in self.inotify.read():
-                if flags.from_mask(event.mask) is flags.CREATE | flags.MODIFY:
+                mask = flags.from_mask(event.mask)
+                if flags.MODIFY in mask or flags.CREATE in mask:
                     self.__fire_event(event)
 
     def stop(self):
