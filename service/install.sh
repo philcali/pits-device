@@ -146,8 +146,9 @@ associate_thing() {
     printf $PMPT 'Create certificates? [y/n]'
     read -r CREATE_CERTS
     if [ "$CREATE_CERTS" = 'y' ]; then
-        wget -O $CA_CERT $ROOT_CA_LOCATION
-        CERT_OUTPUT=$(aws iot create-keys-and-certificate --set-as-active --public-key-outfile $PUB_KEY_FILE --private-key-outfile $PRV_KEY_FILE --certificate-pem-outfile $CERT_FILE)
+        mkdir certs
+        wget -O certs/$CA_CERT $ROOT_CA_LOCATION
+        CERT_OUTPUT=$(aws iot create-keys-and-certificate --set-as-active --public-key-outfile certs/$PUB_KEY_FILE --private-key-outfile certs/$PRV_KEY_FILE --certificate-pem-outfile certs/$CERT_FILE)
         printf $GREEN "Created AWS IoT Thing Certificates for $THING_NAME"
 
         CERT_ARN=$(echo $CERT_OUTPUT | jq '.certificateArn' | tr -d '"')
@@ -156,18 +157,15 @@ associate_thing() {
         aws iot attach-policy --policy-name $THING_POLICY --target $CERT_ARN
         printf $GREEN "Attached $THING_POLICY to $CERT_ARN"
         if [ "$CLIENT_MACHINE" = 'y' ]; then    
-            mkdir certs
-            for FILE in "$CERT_FILE $PRV_KEY_FILE $PUB_KEY_FILE $CA_CERT"; do
-                mv $FILE certs/
-            done
             scp -r certs $HOST_MACHINE:~/certs
-            $COMMAND_PREFIX mv certs /etc/pinthesky/certs
-            printf $GREEN "Sent $CERT_FILE, $PRV_KEY_FILE, and $CA_CERT to /etc/pinthesky/certs"
             rm -rf certs
-            set_env_val "$COMMAND_PREFIX" "CA_CERT" "/etc/pinthesky/certs/$CA_CERT"
-            set_env_val "$COMMAND_PREFIX" "THING_CERT" "/etc/pinthesky/certs/$CERT_FILE"
-            set_env_val "$COMMAND_PREFIX" "THING_KEY" "/etc/pinthesky/certs/$PRV_KEY_FILE"
         fi
+        $COMMAND_PREFIX rm -rf /etc/pinthesky/certs
+        $COMMAND_PREFIX mv certs /etc/pinthesky/certs
+        printf $GREEN "Sent $CERT_FILE, $PRV_KEY_FILE, and $CA_CERT to /etc/pinthesky/certs"
+        set_env_val "$COMMAND_PREFIX" "CA_CERT" "/etc/pinthesky/certs/$CA_CERT"
+        set_env_val "$COMMAND_PREFIX" "THING_CERT" "/etc/pinthesky/certs/$CERT_FILE"
+        set_env_val "$COMMAND_PREFIX" "THING_KEY" "/etc/pinthesky/certs/$PRV_KEY_FILE"
     fi
     printf $PMPT "Add to AWS IoT ThingGroup? [y/n]"
     read -r ADD_TO_GROUP

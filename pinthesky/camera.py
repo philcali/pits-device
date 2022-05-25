@@ -10,6 +10,7 @@ from pinthesky.handler import Handler
 
 logger = logging.getLogger(__name__)
 
+
 class MotionDetector(picamera.array.PiMotionAnalysis):
     '''
     Adapted motion detection class from the PiCamera documentation.
@@ -19,7 +20,6 @@ class MotionDetector(picamera.array.PiMotionAnalysis):
         super(MotionDetector, self).__init__(camera, size)
         self.events = events
         self.sensitivity = sensitivity
-
 
     def analyse(self, a):
         a = np.sqrt(
@@ -31,7 +31,9 @@ class MotionDetector(picamera.array.PiMotionAnalysis):
 
 
 class CameraThread(threading.Thread, Handler):
-    def __init__(self, events, sensitivity=10, resolution=(640, 480), framerate=20, rotation=270, buffer=15, recording_window=None):
+    def __init__(
+            self, events, sensitivity=10, resolution=(640, 480),
+            framerate=20, rotation=270, buffer=15, recording_window=None):
         super().__init__(daemon=True)
         self.running = True
         self.flushing_stream = False
@@ -43,23 +45,23 @@ class CameraThread(threading.Thread, Handler):
         self.camera.resolution = resolution
         self.camera.framerate = framerate
         self.camera.rotation = rotation
-        self.historical_stream = picamera.PiCameraCircularIO(self.camera, seconds=self.buffer)
+        self.historical_stream = picamera.PiCameraCircularIO(
+            self.camera,
+            seconds=self.buffer)
         self.recording_window = recording_window
         self.configuration_lock = threading.Lock()
         self.__set_recording_window()
-
 
     def __set_recording_window(self):
         if self.recording_window is not None:
             self.start_window, self.end_window = map(int, self.recording_window.split('-'))
 
-
     def on_motion_start(self, event):
         if not self.flushing_stream:
-            logger.debug(f'Starting a flush on motion event from {event["timestamp"]}')
+            logger.debug(
+                f'Starting a flush on motion event from {event["timestamp"]}')
             self.flushing_timestamp = event['timestamp']
             self.flushing_stream = True
-
 
     def on_file_change(self, event):
         if "current" in event["content"]:
@@ -82,7 +84,6 @@ class CameraThread(threading.Thread, Handler):
                         setattr(self.camera, field, val)
                 self.resume()
 
-
     def __flush_video(self):
         # Want to flush when it is safe to flush
         with self.configuration_lock:
@@ -95,7 +96,6 @@ class CameraThread(threading.Thread, Handler):
             self.events.fire_event('flush_end', {
                 'start_time': self.flushing_timestamp
             })
-
 
     def run(self):
         logger.info('Starting camera thread')
@@ -113,23 +113,22 @@ class CameraThread(threading.Thread, Handler):
             if self.flushing_stream:
                 self.__flush_video()
 
-
     def pause(self):
         if self.camera.recording:
             self.camera.stop_recording()
             self.historical_stream.clear()
             logger.info("Camera recording is now paused")
 
-
     def resume(self):
         if not self.camera.recording:
-            self.historical_stream = picamera.PiCameraCircularIO(self.camera, seconds=self.buffer)
+            self.historical_stream = picamera.PiCameraCircularIO(
+                self.camera, seconds=self.buffer)
             self.camera.start_recording(
                 self.historical_stream,
                 format='h264',
-                motion_output=MotionDetector(self.camera, self.events, sensitivity=self.sensitivity))
+                motion_output=MotionDetector(
+                    self.camera, self.events, sensitivity=self.sensitivity))
             logger.info("Camera is now recording")
-
 
     def stop(self):
         self.running = False

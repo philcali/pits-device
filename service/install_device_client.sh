@@ -20,10 +20,9 @@ cd build
 cmake ../
 cmake --build . --target aws-iot-device-client
 
-cd ../
 mv aws-iot-device-client /sbin/aws-iot-device-client
 
-cd ../
+cd ../../
 rm -rf aws-iot-device-client
 
 echo "Installing system service"
@@ -43,9 +42,22 @@ EOL
 echo "Configuring AWS IoT Device Client"
 . /etc/pinthesky/pinthesky.env
 for replacement in THING_CERT THING_KEY THING_NAME CA_CERT DATA_ENDPOINT EVENT_INPUT EVENT_OUTPUT CONFIURE_INPUT CONFIGURE_OUTPUT; do
+    if [ -f "${!replacement}" ] && [ $replacement = 'CONFIGURE_INPUT' ] || [ $replacement = 'CONFIGURE_OUTPUT' ] then;
+        chmod 600 "${!replacement}"
+    fi
+    if [ -f "${!replacement}" ] && [ $replacement = 'EVENT_INPUT' ] || [ $replacement = 'EVENT_OUTPUT' ] then;
+        chmod 745 $(dirname "${!replacement}")
+        chmod 600 "${!replacement}"
+    fi
+    if [ $replacement = 'THING_CERT' ]; then
+        chmod 644 "${!replacement}"
+    fi
     sed -i "s|$replacement|${!replacement}|" aws-iot-device-client.json
 done
-mv aws-iot-device-client.json $CONFIG_LOC/
+mv aws-iot-device-client.json $CONFIG_LOC/aws-iot-device-client.conf
+
+chmod 700 /etc/pinthesky/certs
+chmod 745 $CONFIG_LOC
 
 systemctl enable aws-iot-device-client
 systemctl start aws-iot-device-client

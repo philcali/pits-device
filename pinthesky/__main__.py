@@ -10,72 +10,91 @@ import signal
 def create_parser():
     parser = argparse.ArgumentParser(
         description="Simple camera stream that captures motion video events")
-    parser.add_argument("--combine-dir",
+    parser.add_argument(
+        "--combine-dir",
         help="the directory to combine video, defaults to motion_videos",
         default="motion_videos")
-    parser.add_argument("--rotation",
+    parser.add_argument(
+        "--rotation",
         help="rotate the video, valid arguments [0, 90, 180, 270]",
         default=270,
         type=int)
-    parser.add_argument("--resolution",
+    parser.add_argument(
+        "--resolution",
         help="camera resolution, defaults 640x480",
         default="640x480")
-    parser.add_argument("--framerate",
+    parser.add_argument(
+        "--framerate",
         help="framerate of the camera, defaults to 20",
         type=int,
         default=20)
-    parser.add_argument("--buffer",
+    parser.add_argument(
+        "--buffer",
         help="buffer size in seconds, defaults to 15",
         type=int,
         default=15)
-    parser.add_argument("--sensitivity",
+    parser.add_argument(
+        "--sensitivity",
         help="sensitivity of the motion detection math, default 10",
         type=int,
         default=10)
-    parser.add_argument("--event-input",
+    parser.add_argument(
+        "--event-input",
         help="file representing external input, default input.json",
         default="input.json")
-    parser.add_argument("--event-output",
+    parser.add_argument(
+        "--event-output",
         help="file representing external output, default output.json",
         default="output.json")
-    parser.add_argument("--configure-input",
-        help="file representing external configuration input, default config-input.json",
+    parser.add_argument(
+        "--configure-input",
+        help="file for configuration input, default config-input.json",
         default="config-input.json")
-    parser.add_argument("--configure-output",
-        help="file representing external configuration output, default config-output.json",
+    parser.add_argument(
+        "--configure-output",
+        help="file for configuration output, default config-output.json",
         default="config-output.json")
-    parser.add_argument("--thing-name",
+    parser.add_argument(
+        "--thing-name",
         help="the AWS IoT ThingName for use in upload",
         default=None,
         required=False)
-    parser.add_argument("--thing-cert",
+    parser.add_argument(
+        "--thing-cert",
         help="the AWS IoT certificate associated to the Thing",
         default=None,
         required=False)
-    parser.add_argument("--thing-key",
+    parser.add_argument(
+        "--thing-key",
         help="the AWS IoT certificate pair associated to the Thing",
         default=None,
         required=False)
-    parser.add_argument("--ca-cert",
+    parser.add_argument(
+        "--ca-cert",
         help="the root CA certificate to authenticate the certificate",
         default=None,
         required=False)
-    parser.add_argument("--credentials-endpoint",
+    parser.add_argument(
+        "--credentials-endpoint",
         help="the AWS IoT Credentials Provider endpoint",
         default=None,
         required=False)
-    parser.add_argument("--role-alias",
+    parser.add_argument(
+        "--role-alias",
         help="the AWS IoT Role Alias to pull credentials",
         default=None,
         required=False)
-    parser.add_argument("--bucket-name",
+    parser.add_argument(
+        "--bucket-name",
         help="the S3 bucket to upload motion detection files",
         default=None,
         required=False)
-    parser.add_argument("--bucket-prefix",
-        help="the S3 bucket prefix to upload the motion files to, default motion_videos",
+    parser.add_argument(
+        "--bucket-prefix",
+        help="the prefix to upload the motion files to, default motion_videos",
         default="motion_videos")
-    parser.add_argument("--recording-window",
+    parser.add_argument(
+        "--recording-window",
         help="the recording window for the camera relative to the host time, ie: '08-18' for a ten hour window, defaults to always recordding",
         required=False,
         default=None)
@@ -123,10 +142,12 @@ def main():
     event_thread.start()
     camera_thread.start()
     notify_thread.start()
+
     def signal_handler(signum, frame):
         notify_thread.stop()
         camera_thread.stop()
         event_thread.stop()
+
     signal.signal(signalnum=signal.SIGINT, handler=signal_handler)
     camera_thread.join()
 
