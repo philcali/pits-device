@@ -42,8 +42,7 @@ class EventThread(threading.Thread):
     def fire_event(self, event_name, context={}):
         event_data = {
             'name': event_name,
-            'timestamp': floor(time.time()),
-            'handlers': self.handlers[event_name]
+            'timestamp': floor(time.time())
         }
         if event_name in self.handlers:
             self.event_queue.put(dict(context, **event_data))
@@ -52,8 +51,9 @@ class EventThread(threading.Thread):
         logger.info('Starting the event handler thread')
         while self.running:
             message = self.event_queue.get()
-            for handler in message['handlers']:
-                handler(message)
+            if message['name'] in self.handlers:
+                for handler in self.handlers[message['name']]:
+                    handler(message)
             self.event_queue.task_done()
 
     def stop(self):

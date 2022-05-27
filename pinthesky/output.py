@@ -4,10 +4,10 @@ from pinthesky.handler import Handler
 
 
 class Output(Handler):
-    '''
+    """
     A handler that writes event content to a specified location.
     Watchers on the other end are expected to handle the inotify events.
-    '''
+    """
     def __init__(self, output_file):
         self.output_file = output_file
 

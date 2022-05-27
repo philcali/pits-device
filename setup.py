@@ -19,6 +19,6 @@ setup(
         'picamera'
     ],
     extras_require={
-        'test': ['pytest']
+        'test': ['pytest', 'requests-mock']
     }
 )

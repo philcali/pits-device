@@ -23,8 +23,10 @@ class VideoCombiner(Handler):
         '''
         if not os.path.exists(self.combine_dir):
             os.mkdir(self.combine_dir)
-        file_name = f'{event["start_time"]}.motion.h264'
-        with open(os.path.join(self.combine_dir, file_name), 'w') as o:
+        file_name = os.path.join(
+            self.combine_dir,
+            f'{event["start_time"]}.motion.h264')
+        with open(file_name, 'w') as o:
             for n in ['before', 'after']:
                 part_name = f'{event["start_time"]}.{n}.h264'
                 with open(part_name, 'r') as i:

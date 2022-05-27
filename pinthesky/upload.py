@@ -8,11 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 class S3Upload(Handler):
-    '''
+    """
     Handles the `combine_end` to flush the video content to a specific path by
     thing name. Note: if the session is not connected to a remote IoT Thing,
     then this handle does nothing.
-    '''
+    """
     def __init__(self, events, bucket_name, bucket_prefix, session):
         self.events = events
         self.bucket_name = bucket_name
@@ -33,7 +33,7 @@ class S3Upload(Handler):
                 s3 = session.client('s3')
                 with open(event['combine_video'], 'rb') as f:
                     s3.upload_fileobj(f, self.bucket_name, loc)
-                self.events.fire('upload_end', {
+                self.events.fire_event('upload_end', {
                     'start_time': event['start_time'],
                     'upload': {
                         'bucket_name': self.bucket_name,

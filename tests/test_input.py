@@ -32,3 +32,4 @@ def test_input_reader():
             assert f.read() == ""
     os.remove(test_file)
     assert client_handler.calls['motion_start'] == 5
+    assert client_handler.calls['file_change'] == 5
