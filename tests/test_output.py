@@ -5,6 +5,7 @@ from pinthesky.events import EventThread, event_names
 from pinthesky.input import INotifyThread
 from tests.test_handler import TestHandler
 
+
 def test_output():
     events = EventThread()
     test_output = 'test_output.json'

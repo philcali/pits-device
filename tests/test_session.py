@@ -3,8 +3,12 @@ from pinthesky.events import EventThread
 from datetime import datetime
 from requests import exceptions
 
+
+ENDPOINT = 'https://example.com/role-aliases/role_alias/credentials'
+
+
 def test_session(requests_mock):
-    requests_mock.get(f'https://example.com/role-aliases/role_alias/credentials', json={
+    requests_mock.get(ENDPOINT, json={
         "accessKeyId": "abc",
         "secretAccessKey": "efg",
         "sessionToken": "123",
@@ -22,6 +26,7 @@ def test_session(requests_mock):
     assert credentials['secretAccessKey'] == "efg"
     assert credentials['sessionToken'] == "123"
     assert credentials == session.login()
+
 
 def test_update():
     session = Session(
@@ -62,7 +67,7 @@ def test_update():
 
 
 def test_timeout(requests_mock):
-    requests_mock.get(f'https://example.com/role-aliases/role_alias/credentials', exc=exceptions.ConnectTimeout)
+    requests_mock.get(ENDPOINT, exc=exceptions.ConnectTimeout)
     session = Session(
         cert_path="cert_path",
         key_path="key_path",
@@ -71,10 +76,11 @@ def test_timeout(requests_mock):
         role_alias="role_alias",
         credentials_endpoint="https://example.com")
     credentials = session.login()
-    assert credentials == None
+    assert credentials is None
+
 
 def test_general_error(requests_mock):
-    requests_mock.get(f'https://example.com/role-aliases/role_alias/credentials', exc=exceptions.RequestException)
+    requests_mock.get(ENDPOINT, exc=exceptions.RequestException)
     session = Session(
         cert_path="cert_path",
         key_path="key_path",
@@ -83,10 +89,11 @@ def test_general_error(requests_mock):
         role_alias="role_alias",
         credentials_endpoint="https://example.com")
     credentials = session.login()
-    assert credentials == None
+    assert credentials is None
+
 
 def test_bad_error_code(requests_mock):
-    requests_mock.get(f'https://example.com/role-aliases/role_alias/credentials', status_code=401)
+    requests_mock.get(ENDPOINT, status_code=401)
     session = Session(
         cert_path="cert_path",
         key_path="key_path",
@@ -95,4 +102,4 @@ def test_bad_error_code(requests_mock):
         role_alias="role_alias",
         credentials_endpoint="https://example.com")
     credentials = session.login()
-    assert credentials == None
+    assert credentials is None

@@ -5,6 +5,7 @@ from pinthesky.input import INotifyThread, InputHandler
 from pinthesky.events import EventThread
 from tests.test_handler import TestHandler
 
+
 def test_input_reader():
     test_file = "test_file.json"
     events = EventThread()

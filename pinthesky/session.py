@@ -4,6 +4,7 @@ import datetime
 import logging
 import threading
 
+
 logger = logging.getLogger(__name__)
 fields = [
     "cert_path",
