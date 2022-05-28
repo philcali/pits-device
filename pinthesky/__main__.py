@@ -95,7 +95,8 @@ def create_parser():
         default="motion_videos")
     parser.add_argument(
         "--recording-window",
-        help="the recording window for the camera relative to the host time, ie: '08-18' for a ten hour window, defaults to always recordding",
+        help="the recording window for the camera relative to the host time," +
+        " ie: '08-18' for a ten hour window, defaults to always recordding",
         required=False,
         default=None)
     return parser

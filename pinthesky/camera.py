@@ -24,7 +24,7 @@ class CameraThread(threading.Thread, Handler):
         self.__motion_detection_class = motion_detection_class
         self.running = True
         self.flushing_stream = False
-        self.flushing_timestamp = None
+        self.flushing_ts = None
         self.events = events
         self.buffer = buffer
         self.sensitivity = sensitivity
@@ -39,20 +39,22 @@ class CameraThread(threading.Thread, Handler):
 
     def __set_recording_window(self):
         if self.recording_window is not None:
-            self.start_window, self.end_window = map(int, self.recording_window.split('-'))
+            self.start_window, self.end_window = map(
+                int, self.recording_window.split('-'))
 
     def __new_motion_detect(self):
         if self.__motion_detection_class is None:
             from pinthesky.motion_detect import MotionDetector
             self.__motion_detection_class = MotionDetector
-        return self.__motion_detection_class(self.camera, self.events, self.sensitivity)
+        return self.__motion_detection_class(
+            self.camera, self.events, self.sensitivity)
 
     def __new_stream_buffer(self):
         if self.__stream_class is None:
             from picamera import PiCameraCircularIO
             self.__stream_class = PiCameraCircularIO
         return self.__stream_class(self.camera, seconds=self.buffer)
-    
+
     def __new_camera(self):
         if self.__camera_class is None:
             from picamera import PiCamera
@@ -63,7 +65,7 @@ class CameraThread(threading.Thread, Handler):
         if not self.flushing_stream:
             logger.debug(
                 f'Starting a flush on motion event from {event["timestamp"]}')
-            self.flushing_timestamp = event['timestamp']
+            self.flushing_ts = event['timestamp']
             self.flushing_stream = True
 
     def on_file_change(self, event):
@@ -92,14 +94,14 @@ class CameraThread(threading.Thread, Handler):
     def __flush_video(self):
         # Want to flush when it is safe to flush
         with self.configuration_lock:
-            self.camera.split_recording(f'{self.flushing_timestamp}.after.h264')
-            self.historical_stream.copy_to(f'{self.flushing_timestamp}.before.h264')
+            self.camera.split_recording(f'{self.flushing_ts}.after.h264')
+            self.historical_stream.copy_to(f'{self.flushing_ts}.before.h264')
             self.historical_stream.clear()
             time.sleep(self.buffer)
             self.camera.split_recording(self.historical_stream)
             self.flushing_stream = False
             self.events.fire_event('flush_end', {
-                'start_time': self.flushing_timestamp
+                'start_time': self.flushing_ts
             })
 
     def run(self):

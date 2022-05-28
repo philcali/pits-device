@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class INotifyThread(threading.Thread):
-    '''
+    """
     Wrapper class for an INotify watcher. The thread polls events externally
     configured, and pumps changes back into the EventThread. Subscribers are
     notified via the `file_change` event.
-    '''
+    """
     def __init__(self, events, inotify=None):
         super().__init__(daemon=True)
         self.running = True
@@ -71,9 +71,9 @@ class INotifyThread(threading.Thread):
 
 
 class InputHandler(Handler):
-    '''
+    """
     An INotify handler that watches to files who content translate into events.
-    '''
+    """
     def __init__(self, events):
         self.events = events
         pass
