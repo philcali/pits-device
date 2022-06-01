@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="pinthesky",
-    version="0.0.1",
+    version="0.1.0",
     description="Simple Pi In The Sky device Integration",
     author="Philip Cali",
     author_email="philip.cali@gmail.com",

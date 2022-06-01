@@ -7,9 +7,16 @@ import sys
 import signal
 
 
+VERSION = "0.1.0"
+
+
 def create_parser():
     parser = argparse.ArgumentParser(
         description="Simple camera stream that captures motion video events")
+    parser.add_argument(
+        "--version",
+        help="displays the current version",
+        type=bool)
     parser.add_argument(
         "--combine-dir",
         help="the directory to combine video, defaults to motion_videos",
@@ -104,6 +111,9 @@ def create_parser():
 
 def main():
     parsed = create_parser().parse_args(sys.argv[1:])
+    if parsed.version:
+        print(VERSION)
+        exit(0)
     # TODO: make this externally configurable
     pinthesky.set_stream_logger("pinthesky", level=logging.INFO)
     event_thread = events.EventThread()

@@ -44,7 +44,7 @@ banner() {
 
 ########################################################
 
-Welcome to the guided install of the pinthesky device!
+Welcome to the configuration UI for a pinthesky device!
 "
 }
 
@@ -192,6 +192,7 @@ install_pinthesky() {
     local CLIENT_MACHINE=$1
     local HOST_MACHINE=$2
     local COMMAND_PREFIX=$3
+    local env_location="/etc/pinthesky/pinthesky.env"
 
     PINTHESKY_VERSION=$($COMMAND_PREFIX which pinthesky)
     if [ -z "$PINTHESKY_VERSION" ]; then
@@ -203,17 +204,19 @@ install_pinthesky() {
         printf $PMPT "python3 -m pip install --upgrade pinthesky"
     fi
 
-    $COMMAND_PREFIX mkdir -p /etc/pinthesky
-    printf $GREEN "Created /etc/pinthesky"
-
-    download_resource pinthesky.env
-    local env_location="/etc/pinthesky/pinthesky.env"
-    if [ "$CLIENT_MACHINE" = 'y' ]; then
-        scp pinthesky.env $HOST_MACHINE:~/
+    printf $PMPT "Overwrite with a clean $env_location? [y/n]"
+    read -r CLEAN_ENV
+    if [ "$CLEAN_ENV" = 'y' ]; then
+        $COMMAND_PREFIX mkdir -p /etc/pinthesky
+        printf $GREEN "Created /etc/pinthesky"
+        download_resource pinthesky.env
+        if [ "$CLIENT_MACHINE" = 'y' ]; then
+            scp pinthesky.env $HOST_MACHINE:~/
+        fi
+        $COMMAND_PREFIX mv pinthesky.env $env_location
+        printf $GREEN "Copied pinthesky.env to ${env_location}"
+        rm pinthesky.env
     fi
-    $COMMAND_PREFIX mv pinthesky.env $env_location
-    printf $GREEN "Copied pinthesky.env to ${env_location}"
-    rm pinthesky.env
     printf $GREEN "Successfully installed pinthesky software"
 }
 
@@ -289,36 +292,40 @@ configure_events() {
 configure_camera() {
     local COMMAND_PREFIX=$1
 
-    printf $PMPT "Set the camera combination directory [$DEFAULT_COMBINE_DIR]:"
-    read -r COMBINE_DIR
-    COMBINE_DIR=${COMBINE_DIR:-$DEFAULT_COMBINE_DIR}
-    $COMMAND_PREFIX mkdir -p ${COMBINE_DIR}
-    printf $GREEN "Created $COMBINE_DIR"
-    set_env_val "$COMMAND_PREFIX" "COMBINE_DIR" "${COMBINE_DIR}"
-    for CAMERA_FIELD in buffer sensitivity framerate rotation resolution; do
-        VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
-        VAR_VAL=${!VAR_NME}
-        printf $PMPT "Set the camera $CAMERA_FIELD field [$VAR_VAL]:"
-        read -r USER_INPUT
-        USER_INPUT=${USER_INPUT:-$VAR_VAL}
-        set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}" "$VAR_VAL"
-    done
-    printf $PMPT "Would you like to set a recording window? [y/n]"
-    read -r SET_WINDOW
-    RECORDING_WINDOW="0-23"
-    if [ "$SET_WINDOW" = 'y' ]; then
-        START_HOUR=0
-        END_HOUR=0
-        while [ $START_HOUR -ge $END_HOUR ] || [ $END_HOUR -gt 23 ] || [ $START_HOUR -lt 0 ]; do
-            echo "The valid range must be between 0-23 and the ending hour must be greater than the starting hour."
-            printf $PMPT "When should the camera start recording? [0]"
-            read -r START_HOUR
-            printf $PMPT "When should the camera end the recording? [23]"
-            read -r END_HOUR
+    printf $PMPT "Configure other camera properties? [y/n]"
+    read -r CONFIGURE_CAMERA
+    if [ "$CONFIGURE_CAMERA" = 'y' ]; then
+        printf $PMPT "Set the camera combination directory [$DEFAULT_COMBINE_DIR]:"
+        read -r COMBINE_DIR
+        COMBINE_DIR=${COMBINE_DIR:-$DEFAULT_COMBINE_DIR}
+        $COMMAND_PREFIX mkdir -p ${COMBINE_DIR}
+        printf $GREEN "Created $COMBINE_DIR"
+        set_env_val "$COMMAND_PREFIX" "COMBINE_DIR" "${COMBINE_DIR}"
+        for CAMERA_FIELD in buffer sensitivity framerate rotation resolution; do
+            VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
+            VAR_VAL=${!VAR_NME}
+            printf $PMPT "Set the camera $CAMERA_FIELD field [$VAR_VAL]:"
+            read -r USER_INPUT
+            USER_INPUT=${USER_INPUT:-$VAR_VAL}
+            set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}" "$USER_INPUT"
         done
-        RECORDING_WINDOW="$START_HOUR-$END_HOUR"
+        printf $PMPT "Would you like to set a recording window? [y/n]"
+        read -r SET_WINDOW
+        RECORDING_WINDOW="0-23"
+        if [ "$SET_WINDOW" = 'y' ]; then
+            START_HOUR=0
+            END_HOUR=0
+            while [ $START_HOUR -ge $END_HOUR ] || [ $END_HOUR -gt 23 ] || [ $START_HOUR -lt 0 ]; do
+                echo "The valid range must be between 0-23 and the ending hour must be greater than the starting hour."
+                printf $PMPT "When should the camera start recording? [0]"
+                read -r START_HOUR
+                printf $PMPT "When should the camera end the recording? [23]"
+                read -r END_HOUR
+            done
+            RECORDING_WINDOW="$START_HOUR-$END_HOUR"
+        fi
+        set_env_val "$COMMAND_PREFIX" "RECORDING_WINDOW" "$RECORDING_WINDOW"
     fi
-    set_env_val "$COMMAND_PREFIX" "RECORDING_WINDOW" "$RECORDING_WINDOW"
 }
 
 configure_service() {
@@ -364,19 +371,32 @@ configure_device_client() {
     local HOST_MACHINE=$2
     local COMMAND_PREFIX=$3
     # TODO: move the device client as an arch build and import it
-    printf $RED "WARNING: Building the AWS IoT Device Client may take a very long time to complete on smaller devices!"
-    printf $PMPT "Install the AWS IoT Device Client? [y/n] "
+    printf $PMPT "Install the AWS IoT Device Client? [y/n]"
     read -r INSTALL_DEVICE_CLIENT
     if [ "$INSTALL_DEVICE_CLIENT" = 'y' ]; then
         download_resource install_device_client.sh
         download_resource aws-iot-device-client.json
         chmod +x install_device_client.sh
-        if [ $CLIENT_MACHINE = 'y' ]; then
+        if [ "$CLIENT_MACHINE" = 'y' ]; then
             scp install_device_client.sh $HOST_MACHINE:~/install_device_client.sh
             scp aws-iot-device-client.json $HOST_MACHINE:~/aws-iot-device-client.json
             rm install_device_client.sh aws-iot-device-client.json
         fi
-        $COMMAND_PREFIX ./install_device_client.sh
+        if [ -z "$($COMMAND_PREFIX ls -1 /sbin/aws-iot-device-client)" ]; then
+            $COMMAND_PREFIX ./install_device_client.sh -t install_client
+        else
+            printf $GREEN "The AWS IoT Device Client is already installed."
+        fi
+        printf $PMPT "Configure AWS IoT Device Client? [y/n]"
+        read -r INSTALL_DEVICE_CLIENT
+        if [ "$INSTALL_DEVICE_CLIENT" = 'y' ]; then
+            $COMMAND_PREFIX ./install_device_client.sh -t configure_device_client
+        fi
+        printf $PMPT "Install the AWS IoT Device Client as a service? [y/n]"
+        read -r INSTALL_DEVICE_CLIENT
+        if [ "$INSTALL_DEVICE_CLIENT" = 'y' ]; then
+            $COMMAND_PREFIX ./install_device_client.sh -t install_service
+        fi
         $COMMAND_PREFIX rm install_device_client.sh
         printf $GREEN "Installed aws-iot-device-client as a service"
     fi
@@ -384,41 +404,345 @@ configure_device_client() {
 
 banner
 
-printf $PMPT "Are you running the install from a client machine? [y/n]"
-read -r CLIENT_MACHINE
-HOST_MACHINE=""
-COMMAND_PREFIX=""
-if [ "$CLIENT_MACHINE" = 'y' ]; then
-    TEST_OUTPUT=""
-    while [ -z "$TEST_OUTPUT" ]; do
-        printf $PMPT "Machine host, ex: pi@hostname.com"
-        read -r HOST_MACHINE
-        COMMAND_PREFIX="ssh -o ConnectTimeout=3 $HOST_MACHINE"
-        TEST_OUTPUT=$($COMMAND_PREFIX echo hello world 2>/dev/null)
-        if [ $(echo $?) -ne 0 ]; then
-            printf $RED "Could not communicate to $HOST_MACHINE, is that correct?"
+usage() {
+    printf $PMPT "Usage: $(basename $0): Install or manage pinthesky software"
+    echo "  -h: Prints out this help message"
+    echo "  -t: Define the target, applicable values are 'install', 'remove', 'inspect'"
+    echo "  -m: Client machine connection details"
+    echo "  -r: Assume root permission for management"
+    exit 1
+}
+
+configure_host_connection() {
+    if [ -z "$HOST_MACHINE" ]; then
+        printf $PMPT "Are you running the install from a client machine? [y/n]"
+        read -r CLIENT_MACHINE
+    else
+        CLIENT_MACHINE='y'
+    fi
+    if [ "$CLIENT_MACHINE" = 'y' ]; then
+        TEST_OUTPUT=""
+        while [ -z "$TEST_OUTPUT" ]; do
+            if [ -z "$HOST_MACHINE" ]; then
+                printf $PMPT "Machine host, ex: pi@hostname.com"
+                read -r HOST_MACHINE
+            fi
+            COMMAND_PREFIX="ssh -o ConnectTimeout=3 $HOST_MACHINE"
+            TEST_OUTPUT=$($COMMAND_PREFIX echo hello world 2>/dev/null)
+            if [ $(echo $?) -ne 0 ]; then
+                printf $RED "Could not communicate to $HOST_MACHINE, is that correct?"
+                HOST_MACHINE=""
+            fi
+        done
+        printf $GREEN "Successfully connected to $HOST_MACHINE"
+    fi
+
+    if [ -z "$ASSUME_ROOT" ]; then
+        printf $PMPT "Can I assume root privileges to install things? [y/n]"
+        read -r ASSUME_ROOT
+    fi
+    if [ "$ASSUME_ROOT" = 'y' ]; then
+        COMMAND_PREFIX="$COMMAND_PREFIX sudo"
+        printf $GREEN "Using root permissions for management of $HOST_MACHINE"
+    else
+        printf $RED "WARNING: Parts of the installation may not succeed."
+    fi
+
+    DRYRUN=${DRYRUN:-0}
+    if [ $DRYRUN -eq 1 ]; then
+        COMMAND_PREFIX="echo $COMMAND_PREFIX"
+    fi
+}
+
+validate_target() {
+    local provided_target=$1
+    local valid_target=""
+    local found_target=""
+
+    for valid_target in install remove inspect; do
+        if [ "$valid_target" = "$provided_target" ]; then
+            found_target=valid_target
         fi
     done
-    printf $GREEN "Successfully connected to $HOST_MACHINE"
-fi
 
-printf $PMPT "Can I assume root privileges to install things? [y/n]"
-read -r ASSUME_ROOT
-if [ "$ASSUME_ROOT" = 'y' ]; then
-    COMMAND_PREFIX="$COMMAND_PREFIX sudo"
-fi
+    if [ -z "$found_target" ]; then
+        printf $RED "Target of $provided_target is not valid"
+        usage
+    fi
+}
 
-DRYRUN=${DRYRUN:-0}
-if [ $DRYRUN -eq 1 ]; then
-    COMMAND_PREFIX="echo $COMMAND_PREFIX"
-fi
+install_device() {
+    local CLIENT_MACHINE=$1;
+    local HOST_MACHINE=$2;
+    local COMMAND_PREFIX=$3;
 
-# TODO: add commands for a manage script, post install
-install_pinthesky "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
-configure_cloud_connection "$AWS_CLI" "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
-configure_events "$COMMAND_PREFIX"
-echo "Alomst done! Let's take a look at the camera configuration itself."
-configure_camera "$COMMAND_PREFIX"
-configure_device_client "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
-configure_service "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
-printf $GREEN "Finished configuring pinthesky! Enjoy!"
+    install_pinthesky "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+    configure_cloud_connection "$AWS_CLI" "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+    configure_events "$COMMAND_PREFIX"
+    configure_camera "$COMMAND_PREFIX"
+    configure_device_client "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+    configure_service "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+    printf $GREEN "Finished configuring pinthesky! Enjoy!"
+}
+
+inspect_device() {
+    local COMMAND_PREFIX=$1
+    local installed_version=""
+    local configured_env=""
+    local thing_groups=""
+    local principals=""
+    local role_alias_arn=""
+    local pintthesky_service=""
+    local device_client_service=""
+    local summary=()
+
+    printf $PMPT "Checking the latest version of pinthesky. Please wait a moment..."
+    installed_version=$($COMMAND_PREFIX python3 -m pip list | grep "pinthesky")
+    if [ -z "$installed_version" ]; then
+        printf $RED "Could not find a target version for pinthesky."
+        summary+=("$(printf $RED "[-] Installed pinthesky software")")
+    else
+        printf $GREEN "Found $installed_version"
+        summary+=("$(printf $GREEN "[x] Installed pinthesky software")")
+    fi
+
+    printf $PMPT "Checking pinthesky configuration. Please wait a moment..."
+    configured_env=$($COMMAND_PREFIX cat /etc/pinthesky/pinthesky.env 2>/dev/null)
+    if [ $(echo $?) -ne 0 ]; then
+        printf $RED "Could not find pre-configured information."
+        summary+=("$(printf $RED "[-] Configured pinthesky software")")
+    else
+        printf $GREEN "Found the following configuration:"
+        for line in $configured_env; do
+            echo $line
+        done
+        # Set the values locally for what is found on the device
+        eval $configured_env
+        summary+=("$(printf $GREEN "[x] Configured pinthesky software")")
+    fi
+
+    printf $PMPT "Checking cloud connection. Please wait a moment..."
+    if [ -z "$THING_NAME" ]; then
+        printf $RED "Device does not appear to be connected to an AWS IoT Thing. Please reconfigure."
+        summary+=("$(printf $RED "[-] Cloud connection")")
+    else
+        if [ -z "$ROLE_ALIAS" ]; then
+            printf $RED "Device does not appear to have a role alias. Please reconfigure."
+        else
+            role_alias_arn=$(aws iot describe-role-alias --role-alias $ROLE_ALIAS | jq '.roleAliasDescription.roleAliasArn' | tr -d '"')
+            printf $GREEN "Role alias $ROLE_ALIAS exists."
+        fi
+        THING_OUTPUT=$(aws iot describe-thing --thing-name $THING_NAME 2>/dev/null)
+        if [ $(echo $?) -ne 0 ]; then
+            printf $RED "Configured for $THING_NAME, but it does not exist."
+        else
+            printf $GREEN "Device is configured to $THING_NAME"
+            thing_groups=$(aws iot list-thing-groups-for-thing --thing-name $THING_NAME | jq '.thingGroups[].groupName' | tr -d '"')
+            for thing_group in $thing_groups; do
+                printf $GREEN "$THING_NAME belongs to $thing_group"
+            done
+            printf $PMPT "Checking for authentication principals. Please wait a moment..."
+            principals=$(aws iot list-thing-principals --thing-name $THING_NAME | jq '.principals[]' | tr -d '"')
+            if [ -z "$principals" ]; then
+                printf $RED "WARNING: there are not attached principals to $THING_NAME. Please reconfigure."
+                summary+=("$(printf $RED "[-] Cloud connection, $THING_NAME with no principals")")
+            else
+                for principal in $principals; do
+                    printf $PMPT "Checking cert principal $principal. Please wait a moment..."
+                    policies=$(aws iot list-attached-policies --target $principal | jq '.policies[].policyName' | tr -d '"')
+                    if [ -z "$policies" ]; then
+                        printf $RED "WARNING: there are no policies attached to $principal. Please reconfigure."
+                        summary+=("$(printf $RED "[-] Cloud connection, $THING_NAME principal without policies")")
+                    else
+                        for policy in $policies; do
+                            printf $GREEN "Policy $policy is attached to $principal"
+                            can_assume=$(aws iot get-policy --policy-name $policy \
+                                | jq -r '.policyDocument' \
+                                | jq '.Statement[] | (.Action[0] + "," + .Resource[0])' \
+                                | grep "iot:AssumeRoleWithCertificate,$role_alias_arn")
+                            if [ -z "$can_assume" ]; then
+                                printf $RED "WARNING: Policy $policy cannot assume role alias $ROLE_ALIAS."
+                                summary+=("$(printf $RED "[-] Cloud connection, $THING_NAME principal without role alias")")
+                            else
+                                printf $GREEN "Policy $policy can assume role alias $ROLE_ALIAS."
+                                summary+=("$(printf $GREEN "[x] Cloud connection")")
+                            fi
+                        done
+                    fi
+                done
+            fi
+        fi
+    fi
+
+    printf $PMPT "Checking pinthesky configuration validity. Please wait a moment..."
+    for test_file in EVENT_INPUT EVENT_OUTPUT CONFIGURE_INPUT CONFIGURE_OUTPUT; do
+        $COMMAND_PREFIX cat ${!test_file} > /dev/null
+        if [ $(echo $?) -ne 0 ]; then
+            printf $RED "WARNING: configuration path ${!test_file} is not valid. Please reconfigure."
+        else
+            printf $GREEN "Configuration path ${!test_file} is valid and present."
+        fi
+    done
+
+    printf $PMPT "Checking storage location. Please wait a moment..."
+    if [ -z "$BUCKET_NAME" ]; then
+        printf $RED "WARNING: Device is not configured to flush to S3. Please reconfigure."
+        summary+=("$(printf $RED "[-] Configured remote storage")")
+    else
+        aws s3api head-bucket --bucket $BUCKET_NAME 2>/dev/null
+        if [ $(echo $?) -ne 0 ]; then
+            printf $RED "WARNING: bucket $BUCKET_NAME does not appear to exist."
+            summary+=("$(printf $RED "[-] Configured remote storage, does not exist.")")
+        else
+            printf $GREEN "Bucket $BUCKET_NAME exists."
+            summary+=("$(printf $GREEN "[x] Configured remote storage")")
+        fi
+    fi
+
+    printf $PMPT "Checking pinthesky.service configuration. Please wait a moment..."
+    pintthesky_service=$($COMMAND_PREFIX systemctl status pinthesky.service)
+    if [ $(echo $?) -eq 4 ]; then
+        printf $RED "WARNING: pinthesky.service is not installed. Please reconfigure."
+        summary+=("$(printf $RED "[-] Configured systemd pinthesky.service")")
+    else
+        printf $GREEN "$pintthesky_service"
+        summary+=("$(printf $GREEN "[x] Configured systemd pinthesky.service")")
+    fi
+
+    printf $PMPT "Checking aws-iot-device-client.service configuration. Please wait a moment..."
+    device_client_service=$($COMMAND_PREFIX systemctl status aws-iot-device-client.service)
+    if [ $(echo $?) -eq 4 ]; then
+        printf $RED "WARNING: aws-iot-device-client.service is not installed. Please reconfigure."
+        summary+=("$(printf $RED "[-] Configured systemd aws-iot-device-client.service")")
+    else
+        printf $GREEN "$device_client_service"
+        device_client_service=$($COMMAND_PREFIX cat /etc/aws-iot-device-client/aws-iot-device-client.conf | jq)
+        echo "$device_client_service"
+        summary+=("$(printf $GREEN "[x] Configured systemd aws-iot-device-client.service")")
+    fi
+
+    printf $PMPT "Printing overall configuration summary..."
+    for line in "${summary[@]}"; do
+        echo $line
+    done
+}
+
+remove_device() {
+    local COMMAND_PREFIX=$1
+    local action;
+    local affirmative;
+    local result;
+
+    action=$($COMMAND_PREFIX systemctl status aws-iot-device-client.service)
+    if [ $(echo $?) -ne 4 ]; then
+        printf $PMPT "Remove aws-iot-device-client service? [y/n]"
+        read -r affirmative
+        if [ "$affirmative" = 'y' ]; then
+            result=$($COMMAND_PREFIX systemctl disable aws-iot-device-client.service)
+            printf $GREEN "$result"
+        fi
+        printf $PMPT "Remove aws-iot-device-client configuration? [y/n]"
+        read -r affirmative
+        if [ "$affirmative" = 'y' ]; then
+            $COMMAND_PREFIX rm -rf /etc/aws-iot-device-client
+            printf $GREEN "Removed /etc/aws-iot-device-client"
+        fi
+        printf $PMPT "Remove aws-iot-device-client binary? [y/n]"
+        read -r affirmative
+        if [ "$affirmative" = 'y' ]; then
+            $COMMAND_PREFIX rm -f /sbin/aws-iot-device-client
+            printf $GREEN "Removed aws-iot-device-client"
+        fi
+    fi
+
+    action=$($COMMAND_PREFIX systemctl status pinthesky.service)
+    if [ $(echo $?) -ne 4 ]; then
+        printf $PMPT "Remove pinthesky systemd service? [y/n]"
+        read -r affirmative
+        if [ "$affirmative" = 'y' ]; then
+            result=$($COMMAND_PREFIX systemctl disable pinthesky.service)
+            printf $GREEN "$result"
+        fi
+    fi
+
+    action=$($COMMAND_PREFIX cat /etc/pinthesky/pinthesky.env 2>/dev/null)
+    if [ $(echo $?) -eq 0 ]; then
+        eval $action
+        if [ ! -z "$THING_NAME" ]; then
+            printf $PMPT "Remove associated certificate? [y/n]"
+            read -r affirmative
+            if [ "$affirmative" = 'y' ]; then
+                action=$(aws iot list-thing-principals --thing-name $THING_NAME | jq '.principals[]' | tr -d '"')
+                aws iot update-certificate --certificate-id $(basename $action) --new-status INACTIVE >/dev/null
+                aws iot detach-thing-principal --thing-name $THING_NAME --principal $action >/dev/null
+                result=$(aws iot list-attached-policies --target $action | jq '.policies[].policyName' | tr -d '"')
+                for policy in $result; do
+                    aws iot detach-policy --policy-name $policy --target $action >/dev/null
+                done
+                aws iot delete-certificate --certificate-id $(basename $action) >/dev/null
+                $COMMAND_PREFIX rm -rf /etc/pinthesky/certs
+                printf $GREEN "Removed configured certificate and cloud associations."
+            fi
+            printf $PMPT "Remove the AWS IoT Thing $THING_NAME? [y/n]"
+            read -r affirmative
+            if [ "$affirmative" = 'y' ]; then
+                aws iot delete-thing --thing-name $THING_NAME >/dev/null
+                printf $GREEN "Removed $THING_NAME and associations."
+            fi
+        fi
+        for config_file in EVENT_INPUT EVENT_OUTPUT CONFIGURE_INPUT CONFIGURE_OUTPUT; do
+            printf $PMPT "Remove ${!config_file}? [y/n]"
+            read -r affirmative
+            if [ "$affirmative" = 'y' ]; then
+                $COMMAND_PREFIX rm -f ${!config_file}
+                printf $GREEN "Successfully removed ${!config_file}."
+            fi
+        done
+        printf $PMPT "Remove pinthesky.env configuration? [y/n]"
+        read -r affirmative
+        if [ "$affirmative" = 'y' ]; then
+            $COMMAND_PREFIX rm -rf /etc/pinthesky
+            printf $GREEN "Removed pinthesky.env"
+        fi
+    fi
+
+    action=$($COMMAND_PREFIX which pinthesky)
+    if [ ! -z "$action" ]; then
+        printf $PMPT "Remove the pinthesky software? [y/n]"
+        read -r affirmative
+        if [ "$affirmative" = 'y' ]; then
+            printf $PMPT "Removing $action"
+            $COMMAND_PREFIX python3 -m pip uninstall -y pinthesky
+            printf $GREEN "Removed $action software"
+        fi
+    fi
+
+    printf $GREEN "Successfully removed pinthesky from the device."
+}
+
+ASSUME_ROOT=""
+HOST_MACHINE=""
+COMMAND_PREFIX=""
+TARGET="install"
+while getopts "hrm:t:" flag
+do
+    case "${flag}" in
+        m) HOST_MACHINE="${OPTARG}";;
+        r) ASSUME_ROOT='y';;
+        t) TARGET="${OPTARG}"
+            validate_target $TARGET
+            ;;
+        *) usage;;
+    esac
+done
+
+configure_host_connection
+
+printf $PMPT "Running the $TARGET function on the device."
+if [ "$TARGET" = 'inspect' ]; then
+    inspect_device "$COMMAND_PREFIX"
+elif [ "$TARGET" = 'remove' ]; then
+    remove_device "$COMMAND_PREFIX"
+elif [ "$TARGET" = 'install' ]; then
+    install_device "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX"
+fi
