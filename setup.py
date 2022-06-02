@@ -2,15 +2,26 @@
 
 from setuptools import setup, find_packages
 
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    long_description = fh.read()
+
 setup(
     name="pinthesky",
     version="0.1.0",
     description="Simple Pi In The Sky device Integration",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author="Philip Cali",
     author_email="philip.cali@gmail.com",
-    url="https://github.com/philcali/pinthesky-device",
+    url="https://github.com/philcali/pits-device",
     license="Apache License 2.0",
     packages=find_packages(),
+    classifiers=[
+        "Progamming Language :: Python :: 3",
+        "License :: OSI Approved :: Apache License 2.0",
+        "Operating System :: OS Independent"
+    ],
     install_requires=[
         'boto3',
         'requests',
