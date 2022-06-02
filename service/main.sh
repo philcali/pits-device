@@ -54,19 +54,14 @@ import_function() {
     local self_path=$(realpath $1)
     local self_dir=$(dirname $self_path)
     local script_file="$self_dir/pits/$import_file"
-    local is_local=1
     if [ ! -f "$script_file" ]; then
         download_resource $import_file
         if [ ! -d $(dirname "$script_file") ]; then
             mkdir -p $(dirname "$script_file")
         fi
         mv $PWD/$import_file $script_file
-        is_local=0
     fi
     . $script_file
-    if [ $is_local -eq 0 ]; then
-        rm $script_file
-    fi
 }
 
 usage() {
