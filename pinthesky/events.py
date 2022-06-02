@@ -18,10 +18,10 @@ event_names = [
 
 
 class EventThread(threading.Thread):
-    '''
+    """
     This thread wraps a queue to flush events sequentially. A Handler could be
     added, or more general anonymous functions.
-    '''
+    """
     def __init__(self):
         super().__init__(daemon=True)
         self.event_queue = queue.Queue()

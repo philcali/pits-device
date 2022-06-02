@@ -18,5 +18,8 @@ You can also use the guided install from your work station to remotely configure
 1. Run `sh` locally to enter the guide:
 
 ```
-wget https://raw.githubusercontent.com/philcali/pits-device/main/service/install.sh && sh install.sh && rm install.sh
+mkdir -p $HOME/bin \
+    && wget -O $HOME/bin/pitsctl https://raw.githubusercontent.com/philcali/pits-device/main/service/main.sh \
+    && chmod +x $HOME/bin/pitsctl \
+    && pitsctl -h
 ```
