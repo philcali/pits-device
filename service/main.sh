@@ -71,7 +71,6 @@ usage() {
     echo "  -m: Client machine connection details"
     echo "  -r: Assume root permission for management"
     echo "  -v: Prints the version and exists"
-    exit 1
 }
 
 configure_host_connection() {
@@ -129,6 +128,7 @@ validate_target() {
     if [ -z "$found_target" ]; then
         printf $RED "Target of $provided_target is not valid"
         usage
+        exit 1
     fi
 }
 
@@ -159,7 +159,12 @@ do
         t) TARGET="${OPTARG}"
             validate_target $TARGET
             ;;
-        *) usage;;
+        h) usage
+            exit 0
+            ;;
+        *) usage
+            exit 1
+            ;;
     esac
 done
 

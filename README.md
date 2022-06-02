@@ -23,3 +23,62 @@ mkdir -p $HOME/bin \
     && chmod +x $HOME/bin/pitsctl \
     && pitsctl -h
 ```
+
+## Usage
+
+The `pitsctl` entry point can handle three targets:
+
+- `install`: Installs or updates software and agents for running the camera control
+- `remove`: Removes all configuration, cloud resources, software and agents
+- `inspect`: Inpects the installation on the device
+
+```
+Usage: pitsctl - v0.1.0: Install or manage pinthesky software
+  -h: Prints out this help message
+  -t: Define the target, applicable values are 'install', 'remove', 'inspect'
+  -m: Client machine connection details
+  -r: Assume root permission for management
+  -v: Prints the version and exists
+```
+
+### Example Install
+
+Runs the install wizard on a pi from a client machine
+
+```
+pitsctl -t install -rm pi@10.0.0.1
+```
+
+Runs the install wizard
+
+```
+pitsctl
+```
+
+### Example Inpsect
+
+Runs an inspector and outputs a summary
+
+```
+pitsctl -t inspect -rm pi@10.0.0.1
+```
+
+Runs the inspection wizard
+
+```
+pitsctl -t inspect
+```
+
+### Example Remove
+
+Runs the removal wizard on a pi from a client machine
+
+```
+pitsctl -t remove -rm pi@10.0.0.1
+```
+
+Runs the removal wizard
+
+```
+pitsctl -t remove
+```
