@@ -222,7 +222,7 @@ __configure_cloud_connection() {
     else
         printf $PMPT "Associate to an AWS IoT Thing? [y/n]"
         read -r ASSOCIATE_THING
-        if [ $ASSOCIATE_THING = 'y' ]; then
+        if [ "$ASSOCIATE_THING" = 'y' ]; then
             __configure_storage
             __associate_thing "$CLIENT_MACHINE" "$HOST_MACHINE" "$COMMAND_PREFIX" "$IAM_POLCY_ARN"
         fi
@@ -315,13 +315,13 @@ __configure_device_client() {
             printf $GREEN "The AWS IoT Device Client is already installed."
         fi
         printf $PMPT "Configure AWS IoT Device Client? [y/n]"
-        read -r INSTALL_DEVICE_CLIENT
-        if [ "$INSTALL_DEVICE_CLIENT" = 'y' ]; then
+        read -r CONFIGURE_DEVICE_CLIENT
+        if [ "$CONFIGURE_DEVICE_CLIENT" = 'y' ]; then
             $COMMAND_PREFIX ./install_device_client.sh -t configure_device_client
         fi
         printf $PMPT "Install the AWS IoT Device Client as a service? [y/n]"
-        read -r INSTALL_DEVICE_CLIENT
-        if [ "$INSTALL_DEVICE_CLIENT" = 'y' ]; then
+        read -r INSTALL_DEVICE_CLIENT_SERVICE
+        if [ "$INSTALL_DEVICE_CLIENT_SERVICE" = 'y' ]; then
             $COMMAND_PREFIX ./install_device_client.sh -t install_service
         fi
         $COMMAND_PREFIX rm install_device_client.sh
