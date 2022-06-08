@@ -57,7 +57,7 @@ def test_update():
             }
         }
     })
-    while not events.event_queue.empty():
+    while events.event_queue.unfinished_tasks > 0:
         pass
     for field in fields:
         value = f'new_{field}'

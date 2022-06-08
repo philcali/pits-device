@@ -23,6 +23,6 @@ def test_output():
         events.fire_event(event_name=event_name, context={
             "file_name": test_output
         })
-        time.sleep(0.02)
+        time.sleep(0.01)
     os.remove(test_output)
     assert client.calls['file_change'] == 4

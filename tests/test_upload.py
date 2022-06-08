@@ -40,6 +40,6 @@ def test_upload(bsession):
         'start_time': floor(time()),
         'combine_video': video_file
     })
-    while not events.event_queue.empty():
+    while events.event_queue.unfinished_tasks > 0:
         pass
     assert bsession.called

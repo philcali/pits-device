@@ -39,7 +39,7 @@ def test_configuration_change():
             }
         }
     })
-    while not events.event_queue.empty():
+    while events.event_queue.unfinished_tasks > 0:
         pass
     assert camera.recording_window == '12-20'
     assert camera.buffer == 20
