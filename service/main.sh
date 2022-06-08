@@ -18,7 +18,7 @@ DEFAULT_FRAMERATE="20"
 DEFAULT_ROTATION="0"
 DEFAULT_RESOLUTION="640x480"
 RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
-INSTALL_VERSION="git+https://github.com/philcali/pits-device.git"
+INSTALL_VERSION=${INSTALL_VERSION:"pinthesky==$VERSION"}
 ROOT_CA_LOCATION="https://www.amazontrust.com/repository/AmazonRootCA1.pem"
 CERT_FILE="thing.cert.pem"
 PRV_KEY_FILE="thing.key"

@@ -7,7 +7,7 @@ This is the Pi In The Sky (pits) device-side software.
 To install the device software directly from GitHub, or build against it:
 
 ```
-pip3 install git+https://github.com/philcali/pits-device.git
+pip3 install pinthesky
 ```
 
 You can also use the guided install from your work station to remotely configure a RPi via ssh. Some pre-requisites are:
