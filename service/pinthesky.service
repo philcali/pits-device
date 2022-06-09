@@ -16,6 +16,8 @@ ExecStart=/usr/local/bin/pinthesky \
     --framerate $FRAMERATE \
     --event-input $EVENT_INPUT \
     --event-output $EVENT_OUTPUT \
+    --configure-input $CONFIGURE_INPUT \
+    --configure-output $CONFIGURE_OUTPUT \
     --bucket-name $BUCKET_NAME \
     --bucket-prefix $BUCKET_PREFIX \
     --role-alias $ROLE_ALIAS \
