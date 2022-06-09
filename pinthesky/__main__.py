@@ -1,6 +1,5 @@
 import logging
-from pinthesky import events, input, output, upload, session, combiner
-import pinthesky
+from pinthesky import events, input, output, upload, session, combiner, set_stream_logger
 from pinthesky.camera import CameraThread
 import argparse
 import sys
@@ -115,7 +114,7 @@ def main():
         print(VERSION)
         exit(0)
     # TODO: make this externally configurable
-    pinthesky.set_stream_logger("pinthesky", level=logging.INFO)
+    set_stream_logger("pinthesky", level=logging.INFO)
     event_thread = events.EventThread()
     notify_thread = input.INotifyThread(events=event_thread)
     event_output = output.Output(output_file=parsed.event_output)

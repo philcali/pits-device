@@ -1,5 +1,7 @@
 # Pi In The Sky - Device
 
+[![Python package](https://github.com/philcali/pits-device/actions/workflows/python-package.yml/badge.svg)](https://github.com/philcali/pits-device/actions/workflows/python-package.yml) [![Total alerts](https://img.shields.io/lgtm/alerts/g/philcali/pits-device.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/philcali/pits-device/alerts/) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/philcali/pits-device.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/philcali/pits-device/context:python)
+
 This is the Pi In The Sky (pits) device-side software.
 
 ## Installation
