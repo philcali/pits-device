@@ -26,10 +26,10 @@ class VideoCombiner(Handler):
         file_name = os.path.join(
             self.combine_dir,
             f'{event["start_time"]}.motion.h264')
-        with open(file_name, 'w') as o:
+        with open(file_name, 'wb') as o:
             for n in ['before', 'after']:
                 part_name = f'{event["start_time"]}.{n}.h264'
-                with open(part_name, 'r') as i:
+                with open(part_name, 'rb') as i:
                     o.write(i.read())
                 os.remove(part_name)
         self.events.fire_event('combine_end', {
