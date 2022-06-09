@@ -24,6 +24,90 @@ mkdir -p $HOME/bin \
     && pitsctl -h
 ```
 
+## Architecture
+
+![pinthesky.png](images/pinthesky.png)
+
+The `pinthesky` daemon is very light-weight. The entirety of the application runs on 3 threads:
+
+- Single thread to manage the camera
+- Single thread to poll an event queue
+- Single thread to poll inotify
+
+The camera thread detects motion vectors in the recording. The buffer is flushed and an event is
+signaled to combine the buffered video with the live stream. The `h264` file triggers an event
+to begin an upload to S3, if S3 was configured. The following camera configuration flags exists:
+
+```
+  --combine-dir COMBINE_DIR
+                        the directory to combine video, defaults to
+                        motion_videos
+  --rotation ROTATION   rotate the video, valid arguments [0, 90, 180, 270]
+  --resolution RESOLUTION
+                        camera resolution, defaults 640x480
+  --framerate FRAMERATE
+                        framerate of the camera, defaults to 20
+  --buffer BUFFER       buffer size in seconds, defaults to 15
+  --sensitivity SENSITIVITY
+                        sensitivity of the motion detection math, default 10
+```
+
+Where does `inotify` come into play? An optional integration with
+`aws-iot-device-client` exists to handle the MQTT related connections to AWS IoT. Through
+the `aws-iot-device-client`, the `pinthesky` can read MQTT published messages from a file. These
+events will populate the internal event queue. This is useful for manually triggering a video upload.
+
+The `aws-iot-device-client` can also listen to AWS IoT Shadow Document updates. These updates
+are written to a file which `pinthesky` can read to reconfigure the camera (buffer, framerate, etc).
+The follow configuration is used to poll `inotify` for changes:
+
+```
+  --event-input EVENT_INPUT
+                        file representing external input, default input.json
+  --event-output EVENT_OUTPUT
+                        file representing external output, default output.json
+  --configure-input CONFIGURE_INPUT
+                        file for configuration input, default config-
+                        input.json
+  --configure-output CONFIGURE_OUTPUT
+                        file for configuration output, default config-
+                        output.json
+```
+
+The integration with AWS is entirely optional through AWS IoT device configuration.
+Running the daemon with the following commands allow the device to exchange temporary
+AWS V4 credentials with a X509 certificate:
+
+```
+  --thing-name THING_NAME
+                        the AWS IoT ThingName for use in upload
+  --thing-cert THING_CERT
+                        the AWS IoT certificate associated to the Thing
+  --thing-key THING_KEY
+                        the AWS IoT certificate pair associated to the Thing
+  --ca-cert CA_CERT     the root CA certificate to authenticate the
+                        certificate
+  --credentials-endpoint CREDENTIALS_ENDPOINT
+                        the AWS IoT Credentials Provider endpoint
+  --role-alias ROLE_ALIAS
+                        the AWS IoT Role Alias to pull credentials
+```
+
+Once credentials are obtained, the `pinthesky` daemon will attempt to upload to an S3 bucket
+location. These values are configured with:
+
+```
+  --bucket-name BUCKET_NAME
+                        the S3 bucket to upload motion detection files
+  --bucket-prefix BUCKET_PREFIX
+                        the prefix to upload the motion files to, default
+                        motion_videos
+```
+
+
+__Note__: These can be configured correctly for you if you follow the guided `pitsctl` installation
+wizard.
+
 ## Usage
 
 The `pitsctl` entry point can handle three targets:
