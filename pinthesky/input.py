@@ -76,7 +76,6 @@ class InputHandler(Handler):
     """
     def __init__(self, events):
         self.events = events
-        pass
 
     def on_file_change(self, event):
         if "name" in event['content'] and "context" in event['content']:
