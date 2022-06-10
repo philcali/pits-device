@@ -6,7 +6,7 @@ import sys
 import signal
 
 
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 
 def create_parser():
