@@ -71,7 +71,11 @@ class Session(Handler):
                         verify=self.cacert_path,
                         cert=(self.cert_path, self.key_path))
                     res.raise_for_status()
-                    self.credentials = res.json()
+                    payload = res.json()
+                    if "credentials" not in payload:
+                        logger.warning(f'Payload expected "credentials" key but received: {payload}')
+                    else:
+                        self.credentials = payload['credentials']
                 except exceptions.Timeout:
                     logger.error(
                         "Request timeout to %s",

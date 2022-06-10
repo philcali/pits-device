@@ -9,10 +9,12 @@ ENDPOINT = 'https://example.com/role-aliases/role_alias/credentials'
 
 def test_session(requests_mock):
     requests_mock.get(ENDPOINT, json={
-        "accessKeyId": "abc",
-        "secretAccessKey": "efg",
-        "sessionToken": "123",
-        "expiration": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        "credentials": {
+            "accessKeyId": "abc",
+            "secretAccessKey": "efg",
+            "sessionToken": "123",
+            "expiration": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
     })
     session = Session(
         cert_path="cert_path",
@@ -27,6 +29,19 @@ def test_session(requests_mock):
     assert credentials['sessionToken'] == "123"
     assert credentials == session.login()
 
+def test_session_invalid_payload(requests_mock):
+    requests_mock.get(ENDPOINT, json={
+        "message": "Not what I expected, but I can deal."
+    })
+    session = Session(
+        cert_path="cert_path",
+        key_path="key_path",
+        cacert_path="cacert_path",
+        thing_name="thing_name",
+        role_alias="role_alias",
+        credentials_endpoint="https://example.com")
+    credentials = session.login()
+    assert credentials is None
 
 def test_update():
     session = Session(
