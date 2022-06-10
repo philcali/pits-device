@@ -71,7 +71,8 @@ class Session(Handler):
                         verify=self.cacert_path,
                         cert=(self.cert_path, self.key_path))
                     res.raise_for_status()
-                    self.credentials = res.json()
+                    credentials = res.json()
+                    self.credentials = credentials['credentials']
                 except exceptions.Timeout:
                     logger.error(
                         "Request timeout to %s",

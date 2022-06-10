@@ -9,10 +9,12 @@ ENDPOINT = 'https://example.com/role-aliases/role_alias/credentials'
 
 def test_session(requests_mock):
     requests_mock.get(ENDPOINT, json={
-        "accessKeyId": "abc",
-        "secretAccessKey": "efg",
-        "sessionToken": "123",
-        "expiration": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        "credentials": {
+            "accessKeyId": "abc",
+            "secretAccessKey": "efg",
+            "sessionToken": "123",
+            "expiration": datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        }
     })
     session = Session(
         cert_path="cert_path",
