@@ -28,7 +28,7 @@ mkdir -p $HOME/bin \
 
 ## Architecture
 
-![pinthesky.png](images/pinthesky.png)
+![pinthesky.png](https://raw.githubusercontent.com/philcali/pits-device/main/images/pinthesky.png)
 
 The `pinthesky` daemon is very light-weight. The entirety of the application runs on 3 threads:
 
