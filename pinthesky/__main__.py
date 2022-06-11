@@ -1,5 +1,7 @@
 import logging
-from pinthesky import events, input, output, upload, session, combiner, set_stream_logger
+from pinthesky import input, output, upload, combiner, set_stream_logger
+from pinthesky.events import EventThread
+from pinthesky.session import Session
 from pinthesky.camera import CameraThread
 import argparse
 import sys
@@ -15,7 +17,7 @@ def create_parser():
     parser.add_argument(
         "--version",
         help="displays the current version",
-        type=bool)
+        action='store_true')
     parser.add_argument(
         "--combine-dir",
         help="the directory to combine video, defaults to motion_videos",
@@ -115,10 +117,10 @@ def main():
         exit(0)
     # TODO: make this externally configurable
     set_stream_logger("pinthesky", level=logging.INFO)
-    event_thread = events.EventThread()
+    event_thread = EventThread()
     notify_thread = input.INotifyThread(events=event_thread)
     event_output = output.Output(output_file=parsed.event_output)
-    auth_session = session.Session(
+    auth_session = Session(
         cacert_path=parsed.ca_cert,
         cert_path=parsed.thing_cert,
         key_path=parsed.thing_key,

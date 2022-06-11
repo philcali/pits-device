@@ -33,7 +33,7 @@ class Session(Handler):
         self.__set_endpoint(credentials_endpoint)
 
     def __set_endpoint(self, endpoint):
-        if "https://" not in endpoint:
+        if endpoint is not None and "https://" not in endpoint:
             endpoint = f'https://{endpoint}'
         self.credentials_endpoint = endpoint
 
@@ -61,21 +61,23 @@ class Session(Handler):
             with self.refresh_lock:
                 try:
                     self.credentials = None
-                    res = get(
-                        '/'.join([
-                            self.credentials_endpoint,
-                            'role-aliases',
-                            self.role_alias,
-                            'credentials']),
-                        headers={'x-amzn-iot-thingname': self.thing_name},
-                        verify=self.cacert_path,
-                        cert=(self.cert_path, self.key_path))
-                    res.raise_for_status()
-                    payload = res.json()
-                    if "credentials" not in payload:
-                        logger.warning(f'Payload expected "credentials" key but received: {payload}')
-                    else:
-                        self.credentials = payload['credentials']
+                    if self.credentials_endpoint is not None:
+                        res = get(
+                            '/'.join([
+                                self.credentials_endpoint,
+                                'role-aliases',
+                                self.role_alias,
+                                'credentials']),
+                            headers={'x-amzn-iot-thingname': self.thing_name},
+                            verify=self.cacert_path,
+                            cert=(self.cert_path, self.key_path))
+                        res.raise_for_status()
+                        payload = res.json()
+                        if "credentials" not in payload:
+                            logger.warning(
+                                f'Expected "credentials", received: {payload}')
+                        else:
+                            self.credentials = payload['credentials']
                 except exceptions.Timeout:
                     logger.error(
                         "Request timeout to %s",
