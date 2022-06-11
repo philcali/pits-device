@@ -63,7 +63,7 @@ class CameraThread(threading.Thread, Handler):
 
     def on_motion_start(self, event):
         if not self.flushing_stream:
-            logger.debug(
+            logger.info(
                 f'Starting a flush on motion event from {event["timestamp"]}')
             self.flushing_ts = event['timestamp']
             self.flushing_stream = True
@@ -99,10 +99,10 @@ class CameraThread(threading.Thread, Handler):
             self.historical_stream.clear()
             time.sleep(self.buffer)
             self.camera.split_recording(self.historical_stream)
-            self.flushing_stream = False
             self.events.fire_event('flush_end', {
                 'start_time': self.flushing_ts
             })
+            self.flushing_stream = False
 
     def run(self):
         logger.info('Starting camera thread')
