@@ -62,7 +62,7 @@ class CameraThread(threading.Thread, Handler):
         return self.__stream_class(
             self.camera,
             bitrate=self.encoding_bitrate,
-            seconds=self.buffer)
+            seconds=self.buffer // 2)
 
     def __new_camera(self):
         if self.__camera_class is None:

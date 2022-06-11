@@ -168,3 +168,25 @@ Runs the removal wizard
 ```
 pitsctl -t remove
 ```
+
+## Optimal Settings
+
+Adjusting the bitrate, buffer, resolution, framerate, etc... It's a lot to take in.
+
+The default values work, but you will find the buffer doesn't quite mesh with a zero.
+
+1. resolution=640x480
+2. framerate=20
+3. bitrate=17000000 (17Mbps)
+4. profile=high
+5. level=4
+
+For a first gen PiZero, these settings might be too high. I've seen success with
+
+1. resolution=640x480
+2. framerate=15
+3. bitrate=5000000 (5Mbps)
+4. profile=high
+5. level=2.2
+
+This reduces the file size by 60% and aligns buffering to clock time a little more accurately.
