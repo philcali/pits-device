@@ -30,7 +30,8 @@ def create_parser():
     parser.add_argument(
         "--encoding-bitrate",
         help="the bitrate for the camera, default 17000000",
-        default=17000000)
+        default=17000000,
+        type=int)
     parser.add_argument(
         "--encoding-profile",
         help="the camera encoding profile, default high",
