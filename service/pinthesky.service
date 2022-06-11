@@ -26,5 +26,8 @@ ExecStart=/usr/local/bin/pinthesky \
     --thing-key $THING_KEY \
     --ca-cert $CA_CERT \
     --credentials-endpoint $CREDENTIALS_ENDPOINT \
-    --recording-window $RECORDING_WINDOW
+    --recording-window $RECORDING_WINDOW \
+    --encoding-bitrate $ENCODING_BITRATE \
+    --encoding-level $ENCODING_LEVEL \
+    --encoding-profile $ENCODING_PROFILE
 Restart=always

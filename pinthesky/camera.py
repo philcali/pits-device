@@ -15,6 +15,9 @@ class CameraThread(threading.Thread, Handler):
     def __init__(
             self, events, sensitivity=10, resolution=(640, 480),
             framerate=20, rotation=270, buffer=15, recording_window=None,
+            encoding_bitrate=17000000,
+            encoding_profile='high',
+            encoding_level="4",
             camera_class=None,
             stream_class=None,
             motion_detection_class=None):
@@ -28,6 +31,9 @@ class CameraThread(threading.Thread, Handler):
         self.events = events
         self.buffer = buffer
         self.sensitivity = sensitivity
+        self.encoding_bitrate = encoding_bitrate
+        self.encoding_profile = encoding_profile
+        self.encoding_level = encoding_level
         self.camera = self.__new_camera()
         self.camera.resolution = resolution
         self.camera.framerate = framerate
@@ -53,7 +59,10 @@ class CameraThread(threading.Thread, Handler):
         if self.__stream_class is None:
             from picamera import PiCameraCircularIO
             self.__stream_class = PiCameraCircularIO
-        return self.__stream_class(self.camera, seconds=self.buffer)
+        return self.__stream_class(
+            self.camera,
+            bitrate=self.encoding_bitrate,
+            seconds=self.buffer)
 
     def __new_camera(self):
         if self.__camera_class is None:
@@ -69,6 +78,14 @@ class CameraThread(threading.Thread, Handler):
             self.flushing_stream = True
 
     def on_file_change(self, event):
+        self_fields = [
+            "buffer",
+            "sensitivity",
+            "recording_window",
+            "encoding_bitrate",
+            "encoding_profile",
+            "encoding_level"
+        ]
         if "current" in event["content"]:
             cam_obj = event["content"]["current"]["state"]["desired"]["camera"]
             logger.info(f'Update camera fields in {cam_obj}')
@@ -76,7 +93,7 @@ class CameraThread(threading.Thread, Handler):
             with self.configuration_lock:
                 previsouly_recording = self.pause()
                 # Update wrapper fields
-                for field in ["buffer", "sensitivity", "recording_window"]:
+                for field in self_fields:
                     if field in cam_obj:
                         setattr(self, field, cam_obj[field])
                         if field == "recording_window":
@@ -129,12 +146,13 @@ class CameraThread(threading.Thread, Handler):
 
     def resume(self):
         if not self.camera.recording:
-            self.historical_stream = self.__stream_class(
-                self.camera,
-                seconds=self.buffer)
+            self.historical_stream = self.__new_stream_buffer()
             self.camera.start_recording(
                 self.historical_stream,
                 format='h264',
+                bitrate=self.encoding_bitrate,
+                profile=self.encoding_profile,
+                level=self.encoding_level,
                 motion_output=self.__new_motion_detect())
             logger.info("Camera is now recording")
             return True

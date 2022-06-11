@@ -28,6 +28,18 @@ def create_parser():
         default=270,
         type=int)
     parser.add_argument(
+        "--encoding-bitrate",
+        help="the bitrate for the camera, default 17000000",
+        default=17000000)
+    parser.add_argument(
+        "--encoding-profile",
+        help="the camera encoding profile, default high",
+        default="high")
+    parser.add_argument(
+        "--encoding-level",
+        help="the encoding level, default 4",
+        default="4")
+    parser.add_argument(
         "--resolution",
         help="camera resolution, defaults 640x480",
         default="640x480")
@@ -138,6 +150,9 @@ def main():
         resolution=tuple(map(int, parsed.resolution.split('x'))),
         rotation=parsed.rotation,
         framerate=parsed.framerate,
+        encoding_bitrate=parsed.encoding_bitrate,
+        encoding_level=parsed.encoding_level,
+        encoding_profile=parsed.encoding_profile,
         recording_window=parsed.recording_window)
     video_combiner = combiner.VideoCombiner(
         events=event_thread,

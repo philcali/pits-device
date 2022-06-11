@@ -266,7 +266,7 @@ __configure_camera() {
         $COMMAND_PREFIX mkdir -p ${COMBINE_DIR}
         printf $GREEN "Created $COMBINE_DIR"
         set_env_val "$COMMAND_PREFIX" "COMBINE_DIR" "${COMBINE_DIR}"
-        for CAMERA_FIELD in buffer sensitivity framerate rotation resolution; do
+        for CAMERA_FIELD in buffer sensitivity framerate rotation resolution encoding_bitrate encoding_level encoding_profile; do
             VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
             VAR_VAL=${!VAR_NME}
             printf $PMPT "Set the camera $CAMERA_FIELD field [$VAR_VAL]:"

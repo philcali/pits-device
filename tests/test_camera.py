@@ -32,7 +32,10 @@ def test_configuration_change():
                             'recording_window': '12-20',
                             'rotation': 180,
                             'resolution': '320x240',
-                            'framerate': 30
+                            'framerate': 30,
+                            'encoding_bitrate': 5000000,
+                            'encoding_profile': 'main',
+                            'encoding_level': '2.1'
                         }
                     }
                 }
@@ -44,6 +47,9 @@ def test_configuration_change():
     assert camera.recording_window == '12-20'
     assert camera.buffer == 20
     assert camera.sensitivity == 20
+    assert camera.encoding_bitrate == 5000000
+    assert camera.encoding_level == '2.1'
+    assert camera.encoding_profile == 'main'
     assert camera.camera.framerate == 30
     assert camera.camera.rotation == 180
     assert camera.camera.resolution == (320, 240)
