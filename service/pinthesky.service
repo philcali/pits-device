@@ -20,6 +20,8 @@ ExecStart=/usr/local/bin/pinthesky \
     --configure-output $CONFIGURE_OUTPUT \
     --bucket-name $BUCKET_NAME \
     --bucket-prefix $BUCKET_PREFIX \
+    --bucket-image-prefix $BUCKET_IMAGE_PREFIX \
+    --capture-dir $CAPTURE_DIR \
     --role-alias $ROLE_ALIAS \
     --thing-name $THING_NAME \
     --thing-cert $THING_CERT \

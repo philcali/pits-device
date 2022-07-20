@@ -120,6 +120,16 @@ def create_parser():
         " ie: '08-18' for a ten hour window, defaults to always recordding",
         required=False,
         default=None)
+    parser.add_argument(
+        "--capture-dir",
+        help="the directory to write temporary images, default capture_images",
+        default="capture_images",
+        required=False)
+    parser.add_argument(
+        "--bucket-image-prefix",
+        help="the prefix to upload the latest images, default capture_images",
+        default="capture_images",
+        required=False)
     return parser
 
 
@@ -144,6 +154,7 @@ def main():
         events=event_thread,
         bucket_name=parsed.bucket_name,
         bucket_prefix=parsed.bucket_prefix,
+        bucket_images_prefix=parsed.bucket_image_prefix,
         session=auth_session)
     camera_thread = CameraThread(
         events=event_thread,
@@ -154,7 +165,8 @@ def main():
         encoding_bitrate=parsed.encoding_bitrate,
         encoding_level=parsed.encoding_level,
         encoding_profile=parsed.encoding_profile,
-        recording_window=parsed.recording_window)
+        recording_window=parsed.recording_window,
+        capture_directory=parsed.capture_directory)
     video_combiner = combiner.VideoCombiner(
         events=event_thread,
         combine_dir=parsed.combine_dir)

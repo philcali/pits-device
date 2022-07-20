@@ -68,8 +68,14 @@ __configure_storage() {
         printf -v prompt_message $PMPT "Bucket storage prefix [$DEFAULT_BUCKET_PREFIX]:"
         read -p "$prompt_message" BUCKET_PREFIX
         BUCKET_PREFIX=${BUCKET_PREFIX:-$DEFAULT_BUCKET_PREFIX}
+
+        printf -v prompt_message $PMPT "Bucket image storage prefix [$DEFAULT_BUCKET_IMAGE_PREFIX]:"
+        read -p "$prompt_message" BUCKET_IMAGE_PREFIX
+        BUCKET_IMAGE_PREFIX=${BUCKET_IMAGE_PREFIX:-$DEFAULT_BUCKET_IMAGE_PREFIX}
+
         set_env_val "$COMMAND_PREFIX" "BUCKET_NAME" "$BUCKET_NAME"
         set_env_val "$COMMAND_PREFIX" "BUCKET_PREFIX" "$BUCKET_PREFIX"
+        set_env_val "$COMMAND_PREFIX" "BUCKET_IMAGE_PREFIX" "$BUCKET_IMAGE_PREFIX"
 
         ACCOUNT=$(aws sts get-caller-identity | jq '.Account' | tr -d '"')
         POLICY_NAME="$BUCKET_NAME-policy"
@@ -79,6 +85,7 @@ __configure_storage() {
             download_resource default.iam.policy.json
             sed -i "s|BUCKET_NAME|$BUCKET_NAME|" default.iam.policy.json
             sed -i "s|BUCKET_PREFIX|$BUCKET_PREFIX|" default.iam.policy.json 
+            sed -i "s|BUCKET_IMAGE_PREFIX|$BUCKET_IMAGE_PREFIX|" default.iam.policy.json 
 
             IAM_POLICY_OUTPUT=$(aws iam create-policy --policy-name $POLICY_NAME --policy-document file://default.iam.policy.json)
             rm default.iam.policy.json

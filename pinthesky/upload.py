@@ -13,16 +13,22 @@ class S3Upload(Handler):
     thing name. Note: if the session is not connected to a remote IoT Thing,
     then this handle does nothing.
     """
-    def __init__(self, events, bucket_name, bucket_prefix, session):
+    def __init__(
+            self, events,
+            bucket_name,
+            bucket_prefix,
+            session,
+            bucket_images_prefix=None):
         self.events = events
         self.bucket_name = bucket_name
         self.bucket_prefix = bucket_prefix
         self.session = session
+        self.bucket_image_prefix = bucket_images_prefix
 
-    def on_combine_end(self, event):
+    def __upload_to_bucket(self, file_obj, start_time):
         creds = self.session.login()
         if self.bucket_name is not None and creds is not None:
-            video = os.path.basename(event['combine_video'])
+            video = os.path.basename(file_obj)
             loc = f'{self.bucket_prefix}/{self.session.thing_name}/{video}'
             logger.debug(f"Uploading to s3://{self.bucket_name}/{loc}")
             session = boto3.Session(
@@ -31,10 +37,10 @@ class S3Upload(Handler):
                 creds['sessionToken'])
             try:
                 s3 = session.client('s3')
-                with open(event['combine_video'], 'rb') as f:
+                with open(file_obj, 'rb') as f:
                     s3.upload_fileobj(f, self.bucket_name, loc)
                 self.events.fire_event('upload_end', {
-                    'start_time': event['start_time'],
+                    'start_time': start_time,
                     'upload': {
                         'bucket_name': self.bucket_name,
                         'bucket_key': loc
@@ -45,4 +51,11 @@ class S3Upload(Handler):
                     f'Failed to upload to s3://{self.bucket_name}/{loc}: {e}')
             finally:
                 # TODO: add a failure strategy / retry attempt here
-                os.remove(event['combine_video'])
+                os.remove(file_obj)
+
+    def on_capture_image_end(self, event):
+        if self.bucket_image_prefix is not None:
+            self.__upload_to_bucket(event['image_file'], event['start_time'])
+
+    def on_combine_end(self, event):
+        self.__upload_to_bucket(event['combine_video'], event['start_time'])

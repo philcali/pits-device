@@ -20,7 +20,8 @@ class CameraThread(threading.Thread, Handler):
             encoding_level="4",
             camera_class=None,
             stream_class=None,
-            motion_detection_class=None):
+            motion_detection_class=None,
+            capture_directory=None):
         super().__init__(daemon=True)
         self.__camera_class = camera_class
         self.__stream_class = stream_class
@@ -40,6 +41,7 @@ class CameraThread(threading.Thread, Handler):
         self.camera.rotation = rotation
         self.historical_stream = self.__new_stream_buffer()
         self.recording_window = recording_window
+        self.capture_directory = capture_directory
         self.configuration_lock = threading.Lock()
         self.__set_recording_window()
 
@@ -69,6 +71,15 @@ class CameraThread(threading.Thread, Handler):
             from picamera import PiCamera
             self.__camera_class = PiCamera
         return self.__camera_class()
+
+    def on_capture_image(self, event):
+        logger.info(f'Starting a capture to {self.capture_directory}')
+        result = f'{self.capture_directory}/img-{event["timestamp"]}.jpg'
+        self.camera.capture(result, use_video_port=True)
+        self.events.fire_event('capture_image_end', {
+            'image_file': result,
+            'start_time': event['timestamp']
+        })
 
     def on_motion_start(self, event):
         if not self.flushing_stream:

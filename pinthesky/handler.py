@@ -37,3 +37,16 @@ class Handler():
         Event fields are `content` which contains the content of the file.
         """
         pass
+
+    def on_capture_image(self, event):
+        """
+        Handle the call capture event image.
+        """
+        pass
+
+    def on_capture_image_end(self, event):
+        """
+        Handle when the capture of an image is created.
+        Event field is: `image_file`
+        """
+        pass

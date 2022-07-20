@@ -25,6 +25,12 @@ class TestHandler(Handler):
     def on_file_change(self, event):
         self.__on_event('file_change', event)
 
+    def on_capture_image(self, event):
+        self.__on_event('capture_image', event)
+
+    def on_capture_image_end(self, event):
+        self.__on_event('capture_image_end', event)
+
 
 def test_handler():
     handler = TestHandler()
