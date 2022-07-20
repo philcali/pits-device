@@ -25,11 +25,11 @@ class S3Upload(Handler):
         self.session = session
         self.bucket_image_prefix = bucket_images_prefix
 
-    def __upload_to_bucket(self, file_obj, start_time):
+    def __upload_to_bucket(self, prefix, file_obj, start_time):
         creds = self.session.login()
         if self.bucket_name is not None and creds is not None:
             video = os.path.basename(file_obj)
-            loc = f'{self.bucket_prefix}/{self.session.thing_name}/{video}'
+            loc = f'{prefix}/{self.session.thing_name}/{video}'
             logger.debug(f"Uploading to s3://{self.bucket_name}/{loc}")
             session = boto3.Session(
                 creds['accessKeyId'],
@@ -55,7 +55,13 @@ class S3Upload(Handler):
 
     def on_capture_image_end(self, event):
         if self.bucket_image_prefix is not None:
-            self.__upload_to_bucket(event['image_file'], event['start_time'])
+            self.__upload_to_bucket(
+                self.bucket_image_prefix,
+                event['image_file'],
+                event['start_time'])
 
     def on_combine_end(self, event):
-        self.__upload_to_bucket(event['combine_video'], event['start_time'])
+        self.__upload_to_bucket(
+            self.bucket_prefix,
+            event['combine_video'],
+            event['start_time'])

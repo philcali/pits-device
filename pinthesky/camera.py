@@ -75,6 +75,8 @@ class CameraThread(threading.Thread, Handler):
     def on_capture_image(self, event):
         logger.info(f'Starting a capture to {self.capture_directory}')
         result = f'{self.capture_directory}/img-{event["timestamp"]}.jpg'
+        if 'file_name' in event:
+            result = f'{self.capture_directory}/{event["file_name"]}'
         self.camera.capture(result, use_video_port=True)
         self.events.fire_event('capture_image_end', {
             'image_file': result,

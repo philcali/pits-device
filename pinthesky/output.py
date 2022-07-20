@@ -23,3 +23,6 @@ class Output(Handler):
 
     def on_upload_end(self, event):
         self.__on_event(event)
+
+    def on_capture_image_end(self, event):
+        self.__on_event(event)
