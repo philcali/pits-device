@@ -39,6 +39,7 @@ class S3Upload(Handler):
                 s3 = session.client('s3')
                 with open(file_obj, 'rb') as f:
                     s3.upload_fileobj(f, self.bucket_name, loc)
+                    logger.info(f'Uploaded to s3://{self.bucket_name}/{loc}')
                 self.events.fire_event('upload_end', {
                     'start_time': start_time,
                     'upload': {
