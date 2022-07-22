@@ -13,7 +13,9 @@ event_names = [
     'flush_end',
     'combine_end',
     'upload_end',
-    'file_change'
+    'file_change',
+    'capture_image',
+    'capture_image_end'
 ]
 
 

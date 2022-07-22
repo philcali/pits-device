@@ -25,4 +25,4 @@ def test_output():
         })
         time.sleep(0.01)
     os.remove(test_output)
-    assert client.calls['file_change'] == 4
+    assert client.calls['file_change'] == 5

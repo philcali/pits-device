@@ -8,7 +8,8 @@
                 "s3:Abort*"
             ],
             "Resource": [
-                "arn:aws:s3:::BUCKET_NAME/BUCKET_PREFIX/*"
+                "arn:aws:s3:::BUCKET_NAME/BUCKET_PREFIX/*",
+                "arn:aws:s3:::BUCKET_NAME/BUCKET_IMAGE_PREFIX/*"
             ]
         }
     ]

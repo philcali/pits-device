@@ -68,8 +68,14 @@ __configure_storage() {
         printf -v prompt_message $PMPT "Bucket storage prefix [$DEFAULT_BUCKET_PREFIX]:"
         read -p "$prompt_message" BUCKET_PREFIX
         BUCKET_PREFIX=${BUCKET_PREFIX:-$DEFAULT_BUCKET_PREFIX}
+
+        printf -v prompt_message $PMPT "Bucket image storage prefix [$DEFAULT_BUCKET_IMAGE_PREFIX]:"
+        read -p "$prompt_message" BUCKET_IMAGE_PREFIX
+        BUCKET_IMAGE_PREFIX=${BUCKET_IMAGE_PREFIX:-$DEFAULT_BUCKET_IMAGE_PREFIX}
+
         set_env_val "$COMMAND_PREFIX" "BUCKET_NAME" "$BUCKET_NAME"
         set_env_val "$COMMAND_PREFIX" "BUCKET_PREFIX" "$BUCKET_PREFIX"
+        set_env_val "$COMMAND_PREFIX" "BUCKET_IMAGE_PREFIX" "$BUCKET_IMAGE_PREFIX"
 
         ACCOUNT=$(aws sts get-caller-identity | jq '.Account' | tr -d '"')
         POLICY_NAME="$BUCKET_NAME-policy"
@@ -79,6 +85,7 @@ __configure_storage() {
             download_resource default.iam.policy.json
             sed -i "s|BUCKET_NAME|$BUCKET_NAME|" default.iam.policy.json
             sed -i "s|BUCKET_PREFIX|$BUCKET_PREFIX|" default.iam.policy.json 
+            sed -i "s|BUCKET_IMAGE_PREFIX|$BUCKET_IMAGE_PREFIX|" default.iam.policy.json 
 
             IAM_POLICY_OUTPUT=$(aws iam create-policy --policy-name $POLICY_NAME --policy-document file://default.iam.policy.json)
             rm default.iam.policy.json
@@ -260,12 +267,16 @@ __configure_camera() {
     printf $PMPT "Configure other camera properties? [y/n]"
     read -r CONFIGURE_CAMERA
     if [ "$CONFIGURE_CAMERA" = 'y' ]; then
-        printf $PMPT "Set the camera combination directory [$DEFAULT_COMBINE_DIR]:"
-        read -r COMBINE_DIR
-        COMBINE_DIR=${COMBINE_DIR:-$DEFAULT_COMBINE_DIR}
-        $COMMAND_PREFIX mkdir -p ${COMBINE_DIR}
-        printf $GREEN "Created $COMBINE_DIR"
-        set_env_val "$COMMAND_PREFIX" "COMBINE_DIR" "${COMBINE_DIR}"
+        for CAMERA_FIELD in capture combine; do
+            VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
+            VAR_VAL=${!VAR_NME}
+            printf $PMPT "Set the camera $CAMERA_FIELD directory [$VAR_VAL]:"
+            read -r USER_INPUT
+            USER_INPUT=${USER_INPUT:-$VAR_VAL}
+            $COMMAND_PREFIX mkdir -p $USER_INPUT
+            printf $GREEN "Created $COMBINE_DIR"
+            set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}" "$USER_INPUT}"
+        done
         for CAMERA_FIELD in buffer sensitivity framerate rotation resolution encoding_bitrate encoding_level encoding_profile; do
             VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
             VAR_VAL=${!VAR_NME}
