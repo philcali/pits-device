@@ -154,7 +154,7 @@ def main():
         events=event_thread,
         bucket_name=parsed.bucket_name,
         bucket_prefix=parsed.bucket_prefix,
-        bucket_images_prefix=parsed.bucket_image_prefix,
+        bucket_image_prefix=parsed.bucket_image_prefix,
         session=auth_session)
     camera_thread = CameraThread(
         events=event_thread,
@@ -166,7 +166,7 @@ def main():
         encoding_level=parsed.encoding_level,
         encoding_profile=parsed.encoding_profile,
         recording_window=parsed.recording_window,
-        capture_directory=parsed.capture_directory)
+        capture_dir=parsed.capture_dir)
     video_combiner = combiner.VideoCombiner(
         events=event_thread,
         combine_dir=parsed.combine_dir)

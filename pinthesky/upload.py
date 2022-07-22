@@ -18,12 +18,12 @@ class S3Upload(Handler):
             bucket_name,
             bucket_prefix,
             session,
-            bucket_images_prefix=None):
+            bucket_image_prefix=None):
         self.events = events
         self.bucket_name = bucket_name
         self.bucket_prefix = bucket_prefix
         self.session = session
-        self.bucket_image_prefix = bucket_images_prefix
+        self.bucket_image_prefix = bucket_image_prefix
 
     def __upload_to_bucket(self, prefix, file_obj, start_time):
         creds = self.session.login()
