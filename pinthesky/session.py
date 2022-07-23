@@ -38,8 +38,8 @@ class Session(Handler):
         self.credentials_endpoint = endpoint
 
     def __is_expired(self, current_time):
-        expiration = self.credentials['expiration']
-        expiry = datetime.datetime.strptime(expiration, "%Y-%m-%dT%H:%M:%SZ")
+        expiration = self.credentials['expiration'].replace('Z', ' UTC')
+        expiry = datetime.datetime.strptime(expiration, "%Y-%m-%dT%H:%M:%S %Z")
         return expiry < current_time
 
     def on_file_change(self, event):
@@ -56,7 +56,7 @@ class Session(Handler):
                             setattr(self, field, con[field])
 
     def login(self, force=False):
-        ct = datetime.datetime.now()
+        ct = datetime.datetime.utcnow()
         if force or self.credentials is None or self.__is_expired(ct):
             with self.refresh_lock:
                 try:
