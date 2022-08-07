@@ -97,7 +97,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             'sensitivity': self.sensitivity,
             'rotation': self.camera.rotation,
             'resolution': 'x'.join(map(str, self.camera.resolution)),
-            'framerate': self.camera.framerate,
+            'framerate': self.camera.framerate.numerator,
             'recording_window': self.recording_window,
             'encoding_level': self.encoding_level,
             'encoding_profile': self.encoding_profile,
