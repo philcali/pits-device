@@ -68,16 +68,10 @@ def test_shadow_update():
     with open(configure_input, 'r') as f:
         payload = json.loads(f.read())
         assert payload == {
-            'current': {
-                'state': {
-                    'desired': {
-                        'tests': {
-                            'send': 'value',
-                            'complex': {
-                                'key': 'value'
-                            }
-                        }
-                    }
+            'tests': {
+                'send': 'value',
+                'complex': {
+                    'key': 'value'
                 }
             }
         }

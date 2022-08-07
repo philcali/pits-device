@@ -193,7 +193,7 @@ def main():
     if not shadow_update.update_document(parsed):
         shadow_update.reset_from_document()
     notify_thread.notify_change(parsed.event_input)
-    notify_thread.notify_change(parsed.configure_output)
+    notify_thread.notify_change(parsed.configure_output, persist=True)
     event_thread.start()
     camera_thread.start()
     notify_thread.start()

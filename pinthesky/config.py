@@ -68,16 +68,9 @@ class ShadowConfig:
             if len(resulting_document) == 0:
                 logger.info('There was no update, Skipping.')
                 return False
-            payload = {
-                'current': {
-                    'state': {
-                        'desired': resulting_document
-                    }
-                }
-            }
-            logger.info(f'Updating config document with {payload}')
+            logger.info(f'Updating config document with {resulting_document}')
             with open(self.__configure_input, 'w') as f:
-                f.write(json.dumps(payload))
+                f.write(json.dumps(resulting_document))
             logger.info(f'Successfully updated {self.__configure_input}')
             return True
         return False
