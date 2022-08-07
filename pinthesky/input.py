@@ -20,14 +20,15 @@ class INotifyThread(threading.Thread):
         self.running = True
         self.inotify = inotify or INotify()
         self.events = events
+        self.persist_handles = {}
         self.handlers = {}
 
-    def __touch_empty(self, file_name):
-        if not os.path.exists(file_name):
+    def __touch_empty(self, file_name, persist):
+        if not persist and not os.path.exists(file_name):
             with open(file_name, 'w') as f:
                 f.write('{}')
 
-    def __watch_file(self, file_name):
+    def __watch_file(self, file_name, persist):
         watch_flags = flags.CREATE | flags.MODIFY
         logger.info(f'Watching input for {file_name}')
         return self.inotify.add_watch(file_name, watch_flags)
@@ -48,14 +49,16 @@ class INotifyThread(threading.Thread):
                     'file_name': file_name,
                     'content': js
                 })
-            with open(file_name, 'w') as f:
-                f.write("")
-            logger.info(f'Zeroing out {file_name} for further use')
+            if not self.persist_handles[file_name]:
+                with open(file_name, 'w') as f:
+                    f.write("")
+                logger.info(f'Zeroing out {file_name} for further use')
 
-    def notify_change(self, file_name):
+    def notify_change(self, file_name, persist=False):
         if file_name not in self.handlers:
-            self.__touch_empty(file_name)
-            self.handlers[file_name] = self.__watch_file(file_name)
+            self.persist_handles[file_name] = persist
+            self.__touch_empty(file_name, persist)
+            self.handlers[file_name] = self.__watch_file(file_name, persist)
 
     def run(self):
         while self.running:

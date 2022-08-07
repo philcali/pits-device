@@ -1,4 +1,5 @@
 from datetime import datetime
+from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 import logging
 import time
@@ -8,7 +9,7 @@ import threading
 logger = logging.getLogger(__name__)
 
 
-class CameraThread(threading.Thread, Handler):
+class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
     """
     A thread that manages a picamera.PiCamera instance.
     """
@@ -41,7 +42,7 @@ class CameraThread(threading.Thread, Handler):
         self.camera.rotation = rotation
         self.historical_stream = self.__new_stream_buffer()
         self.recording_window = recording_window
-        self.capture_dir= capture_dir
+        self.capture_dir = capture_dir
         self.configuration_lock = threading.Lock()
         self.__set_recording_window()
 
@@ -89,6 +90,19 @@ class CameraThread(threading.Thread, Handler):
                 f'Starting a flush on motion event from {event["timestamp"]}')
             self.flushing_ts = event['timestamp']
             self.flushing_stream = True
+
+    def update_document(self) -> ConfigUpdate:
+        return ConfigUpdate('camera', {
+            'buffer': self.buffer,
+            'sensitivity': self.sensitivity,
+            'rotation': self.camera.rotation,
+            'resolution': 'x'.join(map(str, self.camera.resolution)),
+            'framerate': self.camera.framerate.numerator,
+            'recording_window': self.recording_window,
+            'encoding_level': self.encoding_level,
+            'encoding_profile': self.encoding_profile,
+            'encoding_bitrate': self.encoding_bitrate
+        })
 
     def on_file_change(self, event):
         self_fields = [

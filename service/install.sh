@@ -330,6 +330,13 @@ __configure_device_client() {
         if [ "$CONFIGURE_DEVICE_CLIENT" = 'y' ]; then
             $COMMAND_PREFIX ./install_device_client.sh -t configure_device_client
         fi
+        printf $PMPT "Configure Shadow Document update? [empty*/always/never]"
+        read -r CONFIGURE_SHADOW_UPDATE
+        if [ ! -z "$CONFIGURE_SHADOW_UPDATE" ]; then
+            set_env_val "$COMMAND_PREFIX" "SHADOW_UPDATE" "$CONFIGURE_SHADOW_UPDATE"
+        else
+            set_env_val "$COMMAND_PREFIX" "SHADOW_UPDATE" "$DEFAULT_SHADOW_UPDATE"
+        fi
         printf $PMPT "Install the AWS IoT Device Client as a service? [y/n]"
         read -r INSTALL_DEVICE_CLIENT_SERVICE
         if [ "$INSTALL_DEVICE_CLIENT_SERVICE" = 'y' ]; then
