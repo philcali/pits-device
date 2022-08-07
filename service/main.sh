@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.4.0"
+VERSION="0.4.1"
 DEFAULT_THING_NAME="PinTheSkyThing"
 DEFAULT_THING_GROUP="PinTheSkyGroup"
 DEFAULT_ROLE_ALIAS_NAME="PinTheSkyRoleAlias"
