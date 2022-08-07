@@ -34,18 +34,21 @@ class ShadowConfig:
     def add_handler(self, handler: ShadowConfigHandler):
         self.__handlers.append(handler)
 
-    def __is_empty(self):
+    def is_empty(self):
         if not os.path.exists(self.__configure_output):
             return True
         with open(self.__configure_output, 'r') as f:
-            body = json.loads(f.read())
+            content = f.read()
+            if len(content) == 0:
+                return True
+            body = json.loads(content)
             return len(body) == 0
 
     def __should_update(self, ub):
-        return ub == 'empty' and self.__is_empty() or ub == 'always'
+        return ub == 'empty' and self.is_empty() or ub == 'always'
 
     def reset_from_document(self):
-        if self.__is_empty():
+        if self.is_empty():
             logger.info("Skipping reset, as configuration is empty.")
         else:
             with open(self.__configure_output, 'r') as f:
