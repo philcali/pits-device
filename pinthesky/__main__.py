@@ -1,5 +1,7 @@
 import logging
+
 from pinthesky import input, output, upload, combiner, set_stream_logger
+from pinthesky.config import ShadowConfig
 from pinthesky.events import EventThread
 from pinthesky.session import Session
 from pinthesky.camera import CameraThread
@@ -8,7 +10,7 @@ import sys
 import signal
 
 
-VERSION = "0.3.2"
+VERSION = "0.4.0"
 
 
 def create_parser():
@@ -130,6 +132,11 @@ def create_parser():
         help="the prefix to upload the latest images, default capture_images",
         default="capture_images",
         required=False)
+    parser.add_argument(
+        "--shadow-update",
+        help="behavior for the camera shadow document: always, never, empty",
+        default="empty",
+        required=False)
     return parser
 
 
@@ -177,6 +184,14 @@ def main():
     event_thread.on(event_output)
     event_thread.on(event_input_handler)
     event_thread.on(auth_session)
+    shadow_update = ShadowConfig(
+        events=event_thread,
+        configure_input=parsed.configure_input,
+        configure_output=parsed.configure_output)
+    shadow_update.add_handler(camera_thread)
+    shadow_update.add_handler(auth_session)
+    if not shadow_update.update_document(parsed):
+        shadow_update.reset_from_document()
     notify_thread.notify_change(parsed.event_input)
     notify_thread.notify_change(parsed.configure_output)
     event_thread.start()

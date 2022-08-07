@@ -1,4 +1,5 @@
 from unittest import mock
+from pinthesky.config import ConfigUpdate
 from pinthesky.events import EventThread
 from pinthesky.camera import CameraThread
 
@@ -55,3 +56,32 @@ def test_configuration_change():
     assert camera.camera.resolution == (320, 240)
     assert camera.camera.stop_recording.is_called
     assert camera.camera.start_recording.is_called
+
+
+def test_configuration_update():
+    camera_class = mock.MagicMock
+    stream_class = mock.MagicMock
+    motion_class = mock.MagicMock
+    events = EventThread()
+    camera = CameraThread(
+        events=events,
+        camera_class=camera_class,
+        stream_class=stream_class,
+        motion_detection_class=motion_class,
+        sensitivity=10,
+        resolution=(640, 480),
+        framerate=20,
+        rotation=270,
+        buffer=15,
+        recording_window="0-23")
+    assert camera.update_document() == ConfigUpdate('camera', {
+        'buffer': 15,
+        'sensitivity': 10,
+        'rotation': 270,
+        'resolution': '640x480',
+        'framerate': 20,
+        'recording_window': '0-23',
+        'encoding_level': camera.encoding_level,
+        'encoding_profile': camera.encoding_profile,
+        'encoding_bitrate': camera.encoding_bitrate
+    })

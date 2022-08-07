@@ -31,5 +31,6 @@ ExecStart=/usr/local/bin/pinthesky \
     --recording-window $RECORDING_WINDOW \
     --encoding-bitrate $ENCODING_BITRATE \
     --encoding-level $ENCODING_LEVEL \
-    --encoding-profile $ENCODING_PROFILE
+    --encoding-profile $ENCODING_PROFILE \
+    --shadow-update $SHADOW_UPDATE
 Restart=always

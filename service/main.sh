@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VERSION="0.3.2"
+VERSION="0.4.0"
 DEFAULT_THING_NAME="PinTheSkyThing"
 DEFAULT_THING_GROUP="PinTheSkyGroup"
 DEFAULT_ROLE_ALIAS_NAME="PinTheSkyRoleAlias"
@@ -22,6 +22,7 @@ DEFAULT_RESOLUTION="640x480"
 DEFAULT_ENCODING_BITRATE="17000000"
 DEFAULT_ENCODING_LEVEL="4"
 DEFAULT_ENCODING_PROFILE="high"
+DEFAULT_SHADOW_UPDATE="empty"
 RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
 INSTALL_VERSION=${INSTALL_VERSION:-"pinthesky==$VERSION"}
 ROOT_CA_LOCATION="https://www.amazontrust.com/repository/AmazonRootCA1.pem"

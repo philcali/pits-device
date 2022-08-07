@@ -1,3 +1,4 @@
+from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 from requests import get, exceptions
 import datetime
@@ -16,7 +17,7 @@ fields = [
 ]
 
 
-class Session(Handler):
+class Session(Handler, ShadowConfigHandler):
     """
     An auth session wrapper that caches AWS credential material until expiry.
     """
@@ -42,11 +43,22 @@ class Session(Handler):
         expiry = datetime.datetime.strptime(expiration, "%Y-%m-%dT%H:%M:%S %Z")
         return expiry < current_time
 
+    def update_document(self) -> ConfigUpdate:
+        return ConfigUpdate('cloud_connection', {
+            'cert_path': self.cert_path,
+            'cacert_path': self.cacert_path,
+            'key_path': self.key_path,
+            'thing_name': self.thing_name,
+            'role_alias': self.role_alias,
+            'credentials_endpoint': self.credentials_endpoint
+        })
+
     def on_file_change(self, event):
         if "current" in event["content"]:
             desired = event["content"]["current"]["state"]["desired"]
             con = desired["cloud_connection"]
             with self.refresh_lock:
+                self.credentials = None
                 for field in fields:
                     if field in con:
                         val = con[field]
