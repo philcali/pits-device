@@ -48,7 +48,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
 
     def __set_recording_window(self):
         if self.recording_window is not None:
-            self.start_window, self.end_window = map(
+            self.start_hour, self.end_hour = map(
                 int, self.recording_window.split('-'))
 
     def __new_motion_detect(self):
@@ -152,14 +152,16 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         logger.info('Starting camera thread')
         self.resume()
         while self.running:
-            if not self.flushing_stream and self.recording_window:
-                now = datetime.now()
-                if now.hour < self.start_window or now.hour > self.end_window:
-                    self.pause()
-                    time.sleep(1)
-                    continue
-                else:
-                    self.resume()
+            # Configuration lock will prevent a race on "resume" from update
+            with self.configuration_lock:
+                if not self.flushing_stream and self.recording_window:
+                    now = datetime.now()
+                    if now.hour < self.start_hour or now.hour > self.end_hour:
+                        self.pause()
+                        time.sleep(1)
+                        continue
+                    else:
+                        self.resume()
             self.camera.wait_recording(1)
             if self.flushing_stream:
                 self.__flush_video()
