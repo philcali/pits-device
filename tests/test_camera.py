@@ -28,13 +28,13 @@ def test_configuration_change():
                 'state': {
                     'desired': {
                         'camera': {
-                            'buffer': 20,
-                            'sensitivity': 20,
+                            'buffer': '20',
+                            'sensitivity': '20',
                             'recording_window': '12-20',
-                            'rotation': 180,
+                            'rotation': '180',
                             'resolution': '320x240',
-                            'framerate': 30,
-                            'encoding_bitrate': 5000000,
+                            'framerate': '30',
+                            'encoding_bitrate': '5000000',
                             'encoding_profile': 'main',
                             'encoding_level': '2.1'
                         }
