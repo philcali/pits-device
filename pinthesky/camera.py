@@ -113,6 +113,13 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             "encoding_profile",
             "encoding_level"
         ]
+        self_types = {
+            "buffer": int,
+            "sensitivity": int,
+            "encoding_bitrate": int,
+            "rotation": int,
+            "framerate": int
+        }
         if "current" in event["content"]:
             cam_obj = event["content"]["current"]["state"]["desired"]["camera"]
             logger.info(f'Update camera fields in {cam_obj}')
@@ -122,16 +129,21 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                 # Update wrapper fields
                 for field in self_fields:
                     if field in cam_obj:
-                        setattr(self, field, cam_obj[field])
+                        value = cam_obj[field]
+                        if field in self_types:
+                            value = self_types[field](value)
+                        setattr(self, field, value)
                         if field == "recording_window":
                             self.__set_recording_window()
                 # Update picamera fields
                 for field in ["rotation", "resolution", "framerate"]:
                     if field in cam_obj:
-                        val = cam_obj[field]
+                        value = cam_obj[field]
+                        if field in self_types:
+                            value = self_types[field](value)
                         if field == "resolution":
-                            val = tuple(map(int, val.split("x")))
-                        setattr(self.camera, field, val)
+                            value = tuple(map(int, value.split("x")))
+                        setattr(self.camera, field, value)
                 if previsouly_recording:
                     self.resume()
 
