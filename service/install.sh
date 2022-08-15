@@ -275,9 +275,9 @@ __configure_camera() {
             USER_INPUT=${USER_INPUT:-$VAR_VAL}
             $COMMAND_PREFIX mkdir -p $USER_INPUT
             printf $GREEN "Created $USER_INPUT"
-            set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}_DIR" "$USER_INPUT}"
+            set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}_DIR" "$USER_INPUT"
         done
-        for CAMERA_FIELD in buffer sensitivity framerate rotation resolution encoding_bitrate encoding_level encoding_profile; do
+        for CAMERA_FIELD in buffer sensitivity framerate rotation resolution encoding_bitrate encoding_level encoding_profile shadow_update; do
             VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
             VAR_VAL=${!VAR_NME}
             printf $PMPT "Set the camera $CAMERA_FIELD field [$VAR_VAL]:"
