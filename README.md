@@ -119,7 +119,7 @@ The `pitsctl` entry point can handle three targets:
 - `inspect`: Inpects the installation on the device
 
 ```
-Usage: pitsctl - v0.4.1: Install or manage pinthesky software
+Usage: pitsctl - v0.4.2: Install or manage pinthesky software
   -h: Prints out this help message
   -t: Define the target, applicable values are 'install', 'remove', 'inspect'
   -m: Client machine connection details
