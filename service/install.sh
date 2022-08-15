@@ -268,14 +268,14 @@ __configure_camera() {
     read -r CONFIGURE_CAMERA
     if [ "$CONFIGURE_CAMERA" = 'y' ]; then
         for CAMERA_FIELD in capture combine; do
-            VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
+            VAR_NME="DEFAULT_${CAMERA_FIELD^^}_DIR"
             VAR_VAL=${!VAR_NME}
             printf $PMPT "Set the camera $CAMERA_FIELD directory [$VAR_VAL]:"
             read -r USER_INPUT
             USER_INPUT=${USER_INPUT:-$VAR_VAL}
             $COMMAND_PREFIX mkdir -p $USER_INPUT
-            printf $GREEN "Created $COMBINE_DIR"
-            set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}" "$USER_INPUT}"
+            printf $GREEN "Created $USER_INPUT"
+            set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}_DIR" "$USER_INPUT"
         done
         for CAMERA_FIELD in buffer sensitivity framerate rotation resolution encoding_bitrate encoding_level encoding_profile; do
             VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
