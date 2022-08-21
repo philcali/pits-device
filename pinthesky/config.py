@@ -3,6 +3,8 @@ import json
 import logging
 import os
 
+from pinthesky.handler import Handler
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +22,7 @@ class ShadowConfigHandler:
         pass
 
 
-class ShadowConfig:
+class ShadowConfig(Handler):
     def __init__(
             self,
             events,
@@ -74,3 +76,11 @@ class ShadowConfig:
             logger.info(f'Successfully updated {self.__configure_input}')
             return True
         return False
+
+    def on_file_change(self, event):
+        if event['file_name'] == self.__configure_output:
+            if os.path.getsize(self.__configure_input) > 0:
+                logger.info(f'Truncating {self.__configure_input}')
+                # TODO: probably want to lock on it
+                with open(self.__configure_input, 'w') as f:
+                    f.write("")

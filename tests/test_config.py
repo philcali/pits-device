@@ -106,3 +106,38 @@ def test_shadow_reset():
     os.remove(configure_output)
     assert test_handler.calls['file_change'] == 1
     events.stop()
+
+
+def test_shadow_config_reset():
+    events = EventThread()
+    configure_input = "test_shadow_input.json"
+    configure_output = "test_shadow_output.json"
+    shadow_config = ShadowConfig(
+        events=events,
+        configure_input=configure_input,
+        configure_output=configure_output)
+    events.on(shadow_config)
+    with open(configure_input, 'w') as f:
+        f.write(json.dumps({
+            'some': 'key',
+            'other': 'value'
+        }))
+    with open(configure_output, 'w') as f:
+        f.write(json.dumps({
+            'some': 'new_key',
+            'other': 'new_value'
+        }))
+    events.start()
+    events.fire_event('file_change', {
+        'file_name': configure_output,
+        'context': {
+        }
+    })
+    while not events.event_queue.empty():
+        pass
+    with open(configure_input, 'r') as f:
+        content = f.read()
+    os.remove(configure_input)
+    os.remove(configure_output)
+    assert content == ""
+    events.stop()
