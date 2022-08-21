@@ -153,6 +153,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.camera.split_recording(f'{self.flushing_ts}.after.h264')
             self.historical_stream.copy_to(f'{self.flushing_ts}.before.h264')
             self.historical_stream.clear()
+            logger.info("Flushed buffered contents")
             time.sleep(self.buffer)
             self.camera.split_recording(self.historical_stream)
             self.events.fire_event('flush_end', {

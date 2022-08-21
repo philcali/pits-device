@@ -188,6 +188,7 @@ def main():
         events=event_thread,
         configure_input=parsed.configure_input,
         configure_output=parsed.configure_output)
+    event_thread.on(shadow_update)
     shadow_update.add_handler(camera_thread)
     shadow_update.add_handler(auth_session)
     if not shadow_update.update_document(parsed):
