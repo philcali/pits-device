@@ -182,7 +182,6 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
     def pause(self):
         if self.camera.recording:
             self.camera.stop_recording()
-            self.historical_stream.clear()
             logger.info("Camera recording is now paused")
             return True
         return False
