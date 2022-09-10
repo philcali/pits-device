@@ -12,7 +12,7 @@ def test_output():
     with open(test_output, 'w') as f:
         f.write("")
     client = TestHandler()
-    output = Output(output_file=test_output)
+    output = Output(output_file=test_output, thing_name="TestThing")
     notify = INotifyThread(events)
     notify.notify_change(test_output)
     events.on(output)
@@ -24,5 +24,7 @@ def test_output():
             "file_name": test_output
         })
         time.sleep(0.01)
-    os.remove(test_output)
-    assert client.calls['file_change'] == 5
+    try:
+        assert client.calls['file_change'] == 6
+    finally:
+        os.remove(test_output)

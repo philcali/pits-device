@@ -135,9 +135,11 @@ def test_shadow_config_reset():
     })
     while not events.event_queue.empty():
         pass
-    with open(configure_input, 'r') as f:
-        content = f.read()
-    os.remove(configure_input)
-    os.remove(configure_output)
-    assert content == ""
-    events.stop()
+    try:
+        with open(configure_input, 'r') as f:
+            content = f.read()
+        assert content == ""
+    finally:
+        os.remove(configure_output)
+        os.remove(configure_input)
+        events.stop()

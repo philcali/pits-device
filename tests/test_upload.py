@@ -1,5 +1,6 @@
 from datetime import datetime
 from math import floor
+import os
 from time import time
 from unittest.mock import patch
 from pinthesky.upload import S3Upload
@@ -42,4 +43,8 @@ def test_upload(bsession):
     })
     while events.event_queue.unfinished_tasks > 0:
         pass
-    assert bsession.called
+    try:
+        assert bsession.called
+    finally:
+        if os.path.exists(video_file):
+            os.remove(video_file)

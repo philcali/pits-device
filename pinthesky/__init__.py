@@ -1,5 +1,7 @@
 import logging
 
+VERSION = "0.5.0"
+
 
 def set_stream_logger(name="pinthesky", level=logging.DEBUG, fmt_string=None):
     if fmt_string is None:
