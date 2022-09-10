@@ -101,11 +101,13 @@ def test_shadow_reset():
             }
         }))
     shadow_config.reset_from_document()
-    while not events.event_queue.empty():
+    while events.event_queue.unfinished_tasks > 0:
         pass
-    os.remove(configure_output)
-    assert test_handler.calls['file_change'] == 1
-    events.stop()
+    try:
+        assert test_handler.calls['file_change'] == 1
+    finally:
+        os.remove(configure_output)
+        events.stop()
 
 
 def test_shadow_config_reset():
