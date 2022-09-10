@@ -1,6 +1,7 @@
 from datetime import datetime
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
+from pinthesky.health import DeviceHealth
 import logging
 import time
 import threading
@@ -22,7 +23,8 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             camera_class=None,
             stream_class=None,
             motion_detection_class=None,
-            capture_dir=None):
+            capture_dir=None,
+            device_health=None):
         super().__init__(daemon=True)
         self.__camera_class = camera_class
         self.__stream_class = stream_class
@@ -43,6 +45,9 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         self.historical_stream = self.__new_stream_buffer()
         self.recording_window = recording_window
         self.capture_dir = capture_dir
+        self.device_health = device_health
+        if self.device_health is None:
+            self.device_health = DeviceHealth(events=events)
         self.configuration_lock = threading.Lock()
         self.__set_recording_window()
 
@@ -165,6 +170,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         logger.info('Starting camera thread')
         self.resume()
         while self.running:
+            self.device_health.emit_health(force=False)
             # Configuration lock will prevent a race on "resume" from update
             with self.configuration_lock:
                 if not self.flushing_stream and self.recording_window:
@@ -183,6 +189,9 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         if self.camera.recording:
             self.camera.stop_recording()
             logger.info("Camera recording is now paused")
+            self.events.fire_event('recording_change', {
+                'recording': False
+            })
             return True
         return False
 
@@ -197,6 +206,9 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                 level=self.encoding_level,
                 motion_output=self.__new_motion_detect())
             logger.info("Camera is now recording")
+            self.events.fire_event('recording_change', {
+                'recording': True
+            })
             return True
         return False
 

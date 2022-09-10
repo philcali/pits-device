@@ -50,3 +50,35 @@ class Handler():
         Event field is: `image_file`
         """
         pass
+
+    def on_recording_change(self, event):
+        """
+        Handle when the camera's recording state changes.
+        Event field is: `recording` boolean
+        """
+        pass
+
+    def on_health(self, event):
+        """
+        Handle for starting a health metric push.
+        """
+        pass
+
+    def on_health_end(self, event):
+        """
+        Handle when attempting to read health metric data.
+        Event fields are
+        - `start_time`: pinthesky process started
+        - `up_time`: duration in seconds of pinthesky process
+        - `recording_status`: whether camera is actively recording
+        - `motions_captured`: number of motions captured
+        - `ip_addr`: ip of the default route
+        - `version`: version of pinthesky running
+        - `disk_free`: disk free in bytes
+        - `disk_used`: disk used in bytes
+        - `disk_total`: disk total in bytes
+        - `mem_free`: memory free in KB
+        - `mem_avail`: memory available in KB
+        - `mem_total`: memory total in KB
+        """
+        pass

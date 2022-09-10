@@ -19,18 +19,20 @@ def test_input_reader():
     events.on(client_handler)
     events.start()
     notify.start()
-    for i in range(0, 5):
-        with open(test_file, 'w') as f:
-            f.write(json.dumps({
-                "name": "motion_start",
-                "context": {
-                }
-            }))
-        # Let the queues catch it
-        time.sleep(0.01)
-        # Item is flushed, verify it
-        with open(test_file, "r") as f:
-            assert f.read() == ""
-    os.remove(test_file)
-    assert client_handler.calls['motion_start'] == 5
-    assert client_handler.calls['file_change'] == 5
+    try:
+        for i in range(0, 5):
+            with open(test_file, 'w') as f:
+                f.write(json.dumps({
+                    "name": "motion_start",
+                    "context": {
+                    }
+                }))
+            # Let the queues catch it
+            time.sleep(0.01)
+            # Item is flushed, verify it
+            with open(test_file, "r") as f:
+                assert f.read() == ""
+        assert client_handler.calls['motion_start'] == 5
+        assert client_handler.calls['file_change'] == 5
+    finally:
+        os.remove(test_file)

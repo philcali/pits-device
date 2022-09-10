@@ -15,7 +15,10 @@ event_names = [
     'upload_end',
     'file_change',
     'capture_image',
-    'capture_image_end'
+    'capture_image_end',
+    'recording_change',
+    'health',
+    'health_end'
 ]
 
 
@@ -47,6 +50,7 @@ class EventThread(threading.Thread):
             'timestamp': floor(time.time())
         }
         if event_name in self.handlers:
+            logger.info(f'Pushing {event_data["name"]} to event queue')
             self.event_queue.put(dict(context, **event_data))
 
     def run(self):
@@ -55,7 +59,11 @@ class EventThread(threading.Thread):
             message = self.event_queue.get()
             if message['name'] in self.handlers:
                 for handler in self.handlers[message['name']]:
-                    handler(message)
+                    try:
+                        handler(message)
+                    except Exception as e:
+                        logger.error(
+                            f'Failed to handle {message["name"]}: {e}')
             self.event_queue.task_done()
 
     def stop(self):

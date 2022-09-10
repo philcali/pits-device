@@ -31,6 +31,15 @@ class TestHandler(Handler):
     def on_capture_image_end(self, event):
         self.__on_event('capture_image_end', event)
 
+    def on_recording_change(self, event):
+        self.__on_event('recording_change', event)
+
+    def on_health(self, event):
+        self.__on_event('health', event)
+
+    def on_health_end(self, event):
+        self.__on_event('health_end', event)
+
 
 def test_handler():
     handler = TestHandler()

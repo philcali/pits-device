@@ -101,11 +101,13 @@ def test_shadow_reset():
             }
         }))
     shadow_config.reset_from_document()
-    while not events.event_queue.empty():
+    while events.event_queue.unfinished_tasks > 0:
         pass
-    os.remove(configure_output)
-    assert test_handler.calls['file_change'] == 1
-    events.stop()
+    try:
+        assert test_handler.calls['file_change'] == 1
+    finally:
+        os.remove(configure_output)
+        events.stop()
 
 
 def test_shadow_config_reset():
@@ -135,9 +137,11 @@ def test_shadow_config_reset():
     })
     while not events.event_queue.empty():
         pass
-    with open(configure_input, 'r') as f:
-        content = f.read()
-    os.remove(configure_input)
-    os.remove(configure_output)
-    assert content == ""
-    events.stop()
+    try:
+        with open(configure_input, 'r') as f:
+            content = f.read()
+        assert content == ""
+    finally:
+        os.remove(configure_output)
+        os.remove(configure_input)
+        events.stop()

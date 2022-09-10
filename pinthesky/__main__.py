@@ -1,16 +1,16 @@
+from datetime import timedelta
 import logging
 
-from pinthesky import input, output, upload, combiner, set_stream_logger
+from pinthesky import VERSION, input, output, upload, set_stream_logger
+from pinthesky.camera import CameraThread
+from pinthesky.combiner import VideoCombiner
 from pinthesky.config import ShadowConfig
 from pinthesky.events import EventThread
+from pinthesky.health import DeviceHealth
 from pinthesky.session import Session
-from pinthesky.camera import CameraThread
 import argparse
 import sys
 import signal
-
-
-VERSION = "0.4.3"
 
 
 def create_parser():
@@ -137,6 +137,12 @@ def create_parser():
         help="behavior for the camera shadow document: always, never, empty",
         default="empty",
         required=False)
+    parser.add_argument(
+        "--health-interval",
+        help="seconds in which to emit health metrics, default: 3600",
+        default=3600,
+        type=int,
+        required=False)
     return parser
 
 
@@ -148,8 +154,13 @@ def main():
     # TODO: make this externally configurable
     set_stream_logger("pinthesky", level=logging.INFO)
     event_thread = EventThread()
+    device_health = DeviceHealth(
+        events=event_thread,
+        flush_delta=timedelta(seconds=parsed.health_interval))
     notify_thread = input.INotifyThread(events=event_thread)
-    event_output = output.Output(output_file=parsed.event_output)
+    event_output = output.Output(
+        output_file=parsed.event_output,
+        thing_name=parsed.thing_name)
     auth_session = Session(
         cacert_path=parsed.ca_cert,
         cert_path=parsed.thing_cert,
@@ -164,6 +175,7 @@ def main():
         bucket_image_prefix=parsed.bucket_image_prefix,
         session=auth_session)
     camera_thread = CameraThread(
+        device_health=device_health,
         events=event_thread,
         sensitivity=parsed.sensitivity,
         resolution=tuple(map(int, parsed.resolution.split('x'))),
@@ -174,7 +186,7 @@ def main():
         encoding_profile=parsed.encoding_profile,
         recording_window=parsed.recording_window,
         capture_dir=parsed.capture_dir)
-    video_combiner = combiner.VideoCombiner(
+    video_combiner = VideoCombiner(
         events=event_thread,
         combine_dir=parsed.combine_dir)
     event_input_handler = input.InputHandler(events=event_thread)
@@ -184,6 +196,7 @@ def main():
     event_thread.on(event_output)
     event_thread.on(event_input_handler)
     event_thread.on(auth_session)
+    event_thread.on(device_health)
     shadow_update = ShadowConfig(
         events=event_thread,
         configure_input=parsed.configure_input,
@@ -191,6 +204,7 @@ def main():
     event_thread.on(shadow_update)
     shadow_update.add_handler(camera_thread)
     shadow_update.add_handler(auth_session)
+    shadow_update.add_handler(device_health)
     if not shadow_update.update_document(parsed):
         shadow_update.reset_from_document()
     notify_thread.notify_change(parsed.event_input)

@@ -25,6 +25,8 @@ def test_combiner():
     while not hasattr(handler, 'calls') or "combine_end" not in handler.calls:
         pass
     motion_file = f'{combine_dir}/{start_time}.motion.h264'
-    assert os.path.exists(motion_file)
-    os.remove(motion_file)
-    os.removedirs(combine_dir)
+    try:
+        assert os.path.exists(motion_file)
+        os.remove(motion_file)
+    finally:
+        os.removedirs(combine_dir)
