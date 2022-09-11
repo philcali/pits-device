@@ -277,7 +277,7 @@ __configure_camera() {
             printf $GREEN "Created $USER_INPUT"
             set_env_val "$COMMAND_PREFIX" "${CAMERA_FIELD^^}_DIR" "$USER_INPUT"
         done
-        for CAMERA_FIELD in buffer sensitivity framerate rotation resolution encoding_bitrate encoding_level encoding_profile; do
+        for CAMERA_FIELD in buffer sensitivity framerate rotation resolution encoding_bitrate encoding_level encoding_profile health_interval; do
             VAR_NME="DEFAULT_${CAMERA_FIELD^^}"
             VAR_VAL=${!VAR_NME}
             printf $PMPT "Set the camera $CAMERA_FIELD field [$VAR_VAL]:"
@@ -297,6 +297,12 @@ __configure_camera() {
                 read -r START_HOUR
                 printf $PMPT "When should the camera end the recording? [23]"
                 read -r END_HOUR
+                if [ -z "$START_HOUR" ]; then
+                    START_HOUR=0
+                fi
+                if [ -z "$END_HOUR" ]; then
+                    END_HOUR=23
+                fi
             done
             RECORDING_WINDOW="$START_HOUR-$END_HOUR"
         fi
@@ -320,7 +326,7 @@ __configure_device_client() {
             scp aws-iot-device-client.json $HOST_MACHINE:~/aws-iot-device-client.json
             rm install_device_client.sh aws-iot-device-client.json
         fi
-        if [ -z "$($COMMAND_PREFIX ls -1 /sbin/aws-iot-device-client)" ]; then
+        if [ -z "$($COMMAND_PREFIX ls -1 /sbin | grep aws-iot-device-client)" ]; then
             $COMMAND_PREFIX ./install_device_client.sh -t install_client
         else
             printf $GREEN "The AWS IoT Device Client is already installed."

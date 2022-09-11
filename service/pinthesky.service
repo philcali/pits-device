@@ -32,5 +32,6 @@ ExecStart=/usr/local/bin/pinthesky \
     --encoding-bitrate $ENCODING_BITRATE \
     --encoding-level $ENCODING_LEVEL \
     --encoding-profile $ENCODING_PROFILE \
-    --shadow-update $SHADOW_UPDATE
+    --shadow-update $SHADOW_UPDATE \
+    --health-interval $HEALTH_INTERVAL
 Restart=always
