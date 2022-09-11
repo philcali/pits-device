@@ -110,14 +110,6 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         })
 
     def on_file_change(self, event):
-        self_fields = [
-            "buffer",
-            "sensitivity",
-            "recording_window",
-            "encoding_bitrate",
-            "encoding_profile",
-            "encoding_level"
-        ]
         self_types = {
             "buffer": int,
             "sensitivity": int,
@@ -125,6 +117,21 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             "rotation": int,
             "framerate": int
         }
+
+        def identity(x):
+            return x
+
+        def set_fields_on(cam_obj, on_obj, fields):
+            for field in fields:
+                if field in cam_obj:
+                    value = cam_obj[field]
+                    value = self_types.get(field, identity)(value)
+                    if field == "resolution":
+                        value = tuple(map(int, value.split("x")))
+                    setattr(on_obj, field, value)
+                    if field == "recording_window":
+                        self.__set_recording_window()
+
         if "current" in event["content"]:
             cam_obj = event["content"]["current"]["state"]["desired"]["camera"]
             logger.info(f'Update camera fields in {cam_obj}')
@@ -132,23 +139,18 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             with self.configuration_lock:
                 previsouly_recording = self.pause()
                 # Update wrapper fields
-                for field in self_fields:
-                    if field in cam_obj:
-                        value = cam_obj[field]
-                        if field in self_types:
-                            value = self_types[field](value)
-                        setattr(self, field, value)
-                        if field == "recording_window":
-                            self.__set_recording_window()
+                set_fields_on(on_obj=self, cam_obj=cam_obj, fields=[
+                    "buffer",
+                    "sensitivity",
+                    "recording_window",
+                    "encoding_bitrate",
+                    "encoding_profile",
+                    "encoding_level"
+                ])
                 # Update picamera fields
-                for field in ["rotation", "resolution", "framerate"]:
-                    if field in cam_obj:
-                        value = cam_obj[field]
-                        if field in self_types:
-                            value = self_types[field](value)
-                        if field == "resolution":
-                            value = tuple(map(int, value.split("x")))
-                        setattr(self.camera, field, value)
+                set_fields_on(on_obj=self.camera, cam_obj=cam_obj, fields=[
+                    "rotation", "resolution", "framerate"
+                ])
                 if previsouly_recording:
                     self.resume()
 
