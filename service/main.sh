@@ -23,6 +23,7 @@ DEFAULT_ENCODING_BITRATE="17000000"
 DEFAULT_ENCODING_LEVEL="4"
 DEFAULT_ENCODING_PROFILE="high"
 DEFAULT_SHADOW_UPDATE="empty"
+DEFAULT_HEALTH_INTERVAL="3600"
 RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
 INSTALL_VERSION=${INSTALL_VERSION:-"pinthesky==$VERSION"}
 ROOT_CA_LOCATION="https://www.amazontrust.com/repository/AmazonRootCA1.pem"

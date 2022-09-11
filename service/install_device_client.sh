@@ -14,11 +14,19 @@ install_client() {
         libssl-dev
 
     echo "Building AWS IoT Device Client"
-    git clone https://github.com/awslabs/aws-iot-device-client
+    # START HACK: temporary until this feature on mainline
+    git clone https://github.com/philcali/aws-iot-device-client
     cd aws-iot-device-client
+    git remote add awslabs https://github.com/awslabs/aws-iot-device-client
+    git pull --tags awslabs
+    # END HACK
     mkdir build
     cd build
-    cmake ../
+    cmake ../ \
+        -DEXCLUDE_FP=ON \
+        -DEXCLUDE_ST=ON \
+        -DEXCLUDE_DD=ON \
+        -DEXCLUDE_CONFIG_SHADOW=ON
     cmake --build . --target aws-iot-device-client
 
     mv aws-iot-device-client /sbin/aws-iot-device-client
@@ -65,6 +73,7 @@ configure_device_client() {
 
     chmod 700 /etc/pinthesky/certs
     chmod 745 $CONFIG_LOC
+    chmod 640 $CONFIG_LOC/aws-iot-device-client.conf
 }
 
 usage() {

@@ -8,9 +8,6 @@
         "level": "INFO",
         "type": "STDOUT"
     },
-    "tunneling": {
-        "enabled": false
-    },
     "jobs": {
         "enabled": false
     },
@@ -20,7 +17,8 @@
             "publish-topic": "pinthesky/events/output",
             "publish-file": "EVENT_OUTPUT",
             "subscribe-topic": "pinthesky/events/THING_NAME/input",
-            "subscribe-file": "EVENT_INPUT"
+            "subscribe-file": "EVENT_INPUT",
+            "publish-on-change": true
         }
     },
     "sample-shadow": {
