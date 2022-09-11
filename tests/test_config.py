@@ -135,7 +135,7 @@ def test_shadow_config_reset():
         'context': {
         }
     })
-    while not events.event_queue.empty():
+    while events.event_queue.unfinished_tasks > 0:
         pass
     try:
         with open(configure_input, 'r') as f:
