@@ -11,6 +11,9 @@
     "jobs": {
         "enabled": false
     },
+    "tunneling": {
+        "enabled": false
+    },
     "samples": {
         "pub-sub": {
             "enabled": true,

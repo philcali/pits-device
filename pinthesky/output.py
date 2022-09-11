@@ -40,3 +40,7 @@ class Output(Handler):
 
     def on_health_end(self, event):
         self.__on_event(event)
+
+    def reset(self):
+        with open(self.output_file, 'w') as f:
+            f.write("")

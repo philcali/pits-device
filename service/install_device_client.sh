@@ -22,11 +22,7 @@ install_client() {
     # END HACK
     mkdir build
     cd build
-    cmake ../ \
-        -DEXCLUDE_FP=ON \
-        -DEXCLUDE_ST=ON \
-        -DEXCLUDE_DD=ON \
-        -DEXCLUDE_CONFIG_SHADOW=ON
+    cmake ../
     cmake --build . --target aws-iot-device-client
 
     mv aws-iot-device-client /sbin/aws-iot-device-client
