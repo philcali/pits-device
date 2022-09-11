@@ -217,6 +217,7 @@ def main():
         notify_thread.stop()
         camera_thread.stop()
         event_thread.stop()
+        event_output.reset()
 
     signal.signal(signalnum=signal.SIGINT, handler=signal_handler)
     camera_thread.join()
