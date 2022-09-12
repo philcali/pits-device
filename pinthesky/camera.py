@@ -24,7 +24,8 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             stream_class=None,
             motion_detection_class=None,
             capture_dir=None,
-            device_health=None):
+            device_health=None,
+            buffer_size=None):
         super().__init__(daemon=True)
         self.__camera_class = camera_class
         self.__stream_class = stream_class
@@ -32,6 +33,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         self.running = True
         self.flushing_stream = False
         self.flushing_ts = None
+        self.buffer_size = buffer_size
         self.events = events
         self.buffer = buffer
         self.sensitivity = sensitivity
@@ -67,10 +69,12 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         if self.__stream_class is None:
             from picamera import PiCameraCircularIO
             self.__stream_class = PiCameraCircularIO
-        return self.__stream_class(
-            self.camera,
-            bitrate=self.encoding_bitrate,
-            seconds=self.buffer // 2)
+        kwargs = {'bitrate': self.encoding_bitrate}
+        if self.buffer_size is not None:
+            kwargs = {'size': self.buffer_size}
+        else:
+            kwargs = {'seconds': self.buffer // 2}
+        return self.__stream_class(self.camera, **kwargs)
 
     def __new_camera(self):
         if self.__camera_class is None:
@@ -99,6 +103,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
     def update_document(self) -> ConfigUpdate:
         return ConfigUpdate('camera', {
             'buffer': self.buffer,
+            'buffer_size': self.buffer_size,
             'sensitivity': self.sensitivity,
             'rotation': self.camera.rotation,
             'resolution': 'x'.join(map(str, self.camera.resolution)),
@@ -112,6 +117,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
     def on_file_change(self, event):
         self_types = {
             "buffer": int,
+            "buffer_size": int,
             "sensitivity": int,
             "encoding_bitrate": int,
             "rotation": int,
@@ -141,6 +147,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                 # Update wrapper fields
                 set_fields_on(on_obj=self, cam_obj=cam_obj, fields=[
                     "buffer",
+                    "buffer_size",
                     "sensitivity",
                     "recording_window",
                     "encoding_bitrate",
