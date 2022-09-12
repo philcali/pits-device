@@ -57,6 +57,11 @@ def create_parser():
         type=int,
         default=15)
     parser.add_argument(
+        "--buffer-size",
+        help="buffer size in bytes, unset by default and uses buffer",
+        type=int,
+        default=None)
+    parser.add_argument(
         "--sensitivity",
         help="sensitivity of the motion detection math, default 10",
         type=int,
@@ -185,7 +190,8 @@ def main():
         encoding_level=parsed.encoding_level,
         encoding_profile=parsed.encoding_profile,
         recording_window=parsed.recording_window,
-        capture_dir=parsed.capture_dir)
+        capture_dir=parsed.capture_dir,
+        buffer_size=parsed.buffer_size)
     video_combiner = VideoCombiner(
         events=event_thread,
         combine_dir=parsed.combine_dir)

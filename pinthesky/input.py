@@ -28,8 +28,8 @@ class INotifyThread(threading.Thread):
             with open(file_name, 'w') as f:
                 f.write('{}')
 
-    def __watch_file(self, file_name, persist):
-        watch_flags = flags.CREATE | flags.MODIFY
+    def __watch_file(self, file_name):
+        watch_flags = flags.CLOSE_WRITE | flags.CREATE
         logger.info(f'Watching input for {file_name}')
         return self.inotify.add_watch(file_name, watch_flags)
 
@@ -38,7 +38,7 @@ class INotifyThread(threading.Thread):
         for name, wd in self.handlers.items():
             if event.wd == wd:
                 file_name = name
-        if file_name is not None:
+        if file_name is not None and os.path.exists(file_name):
             with open(file_name, 'r') as f:
                 content = f.read()
                 if content == "":
@@ -58,18 +58,19 @@ class INotifyThread(threading.Thread):
         if file_name not in self.handlers:
             self.persist_handles[file_name] = persist
             self.__touch_empty(file_name, persist)
-            self.handlers[file_name] = self.__watch_file(file_name, persist)
+            self.handlers[file_name] = self.__watch_file(file_name)
 
     def run(self):
         while self.running:
             for event in self.inotify.read():
                 mask = flags.from_mask(event.mask)
-                if flags.MODIFY in mask or flags.CREATE in mask:
+                if flags.CLOSE_WRITE in mask or flags.CREATE in mask:
                     self.__fire_event(event)
 
     def stop(self):
         self.running = False
-        for watched in self.watched:
+        for file_name, watched in self.handlers.items():
+            logger.debug(f'Stopping watch on {file_name}')
             self.inotify.rm_watch(watched)
 
 

@@ -18,6 +18,7 @@ def test_configuration_change():
         resolution=(640, 480),
         framerate=20,
         rotation=270,
+        buffer_size=1000000,
         buffer=15,
         recording_window="0-23")
     events.on(camera)
@@ -29,6 +30,7 @@ def test_configuration_change():
                     'desired': {
                         'camera': {
                             'buffer': '20',
+                            'buffer_size': '2000000',
                             'sensitivity': '20',
                             'recording_window': '12-20',
                             'rotation': '180',
@@ -49,6 +51,7 @@ def test_configuration_change():
     assert camera.buffer == 20
     assert camera.sensitivity == 20
     assert camera.encoding_bitrate == 5000000
+    assert camera.buffer_size == 2000000
     assert camera.encoding_level == '2.1'
     assert camera.encoding_profile == 'main'
     assert camera.camera.framerate == 30
@@ -76,6 +79,7 @@ def test_configuration_update():
         recording_window="0-23")
     assert camera.update_document() == ConfigUpdate('camera', {
         'buffer': 15,
+        'buffer_size': None,
         'sensitivity': 10,
         'rotation': 270,
         'resolution': '640x480',

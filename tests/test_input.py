@@ -35,4 +35,6 @@ def test_input_reader():
         assert client_handler.calls['motion_start'] == 5
         assert client_handler.calls['file_change'] == 5
     finally:
+        notify.stop()
+        events.stop()
         os.remove(test_file)
