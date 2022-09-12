@@ -60,6 +60,7 @@ def create_parser():
         "--buffer-size",
         help="buffer size in bytes, unset by default and uses buffer",
         type=int,
+        required=False,
         default=None)
     parser.add_argument(
         "--sensitivity",

@@ -1,0 +1,6 @@
+[run]
+omit =
+    pinthesky/__main__.py
+    pinthesky/motion_detect.py
+    setup.py
+    tests/*
