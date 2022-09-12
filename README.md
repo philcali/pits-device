@@ -2,7 +2,7 @@
 
 [![Python package](https://github.com/philcali/pits-device/actions/workflows/python-package.yml/badge.svg)](https://github.com/philcali/pits-device/actions/workflows/python-package.yml)
 [![CodeQL](https://github.com/philcali/pits-device/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/philcali/pits-device/actions/workflows/codeql-analysis.yml)
-
+[![codecov](https://codecov.io/gh/philcali/pits-device/branch/main/graph/badge.svg?token=WV9HZSP462)](https://codecov.io/gh/philcali/pits-device)
 
 This is the Pi In The Sky (pits) device-side software.
 
