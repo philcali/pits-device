@@ -25,7 +25,7 @@ class S3Upload(Handler):
         self.session = session
         self.bucket_image_prefix = bucket_image_prefix
 
-    def __upload_to_bucket(self, prefix, file_obj, start_time):
+    def __upload_to_bucket(self, prefix, file_obj, source):
         creds = self.session.login()
         if self.bucket_name is not None and creds is not None:
             video = os.path.basename(file_obj)
@@ -41,11 +41,12 @@ class S3Upload(Handler):
                     s3.upload_fileobj(f, self.bucket_name, loc)
                     logger.info(f'Uploaded to s3://{self.bucket_name}/{loc}')
                 self.events.fire_event('upload_end', {
-                    'start_time': start_time,
+                    'start_time': source['start_time'],
                     'upload': {
                         'bucket_name': self.bucket_name,
                         'bucket_key': loc
-                    }
+                    },
+                    'source': source
                 })
             except RuntimeError as e:
                 logger.error(
@@ -59,10 +60,10 @@ class S3Upload(Handler):
             self.__upload_to_bucket(
                 self.bucket_image_prefix,
                 event['image_file'],
-                event['start_time'])
+                event)
 
     def on_combine_end(self, event):
         self.__upload_to_bucket(
             self.bucket_prefix,
             event['combine_video'],
-            event['start_time'])
+            event)

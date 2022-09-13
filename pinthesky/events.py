@@ -50,7 +50,7 @@ class EventThread(threading.Thread):
             'timestamp': floor(time.time())
         }
         if event_name in self.handlers:
-            logger.info(f'Pushing {event_data["name"]} to event queue')
+            logger.debug(f'Pushing {event_data["name"]} to event queue')
             self.event_queue.put(dict(context, **event_data))
 
     def run(self):

@@ -25,7 +25,7 @@ def test_output():
         })
         time.sleep(0.01)
     try:
-        assert client.calls['file_change'] == 6
+        assert client.calls['file_change'] == 3
         output.reset()
         with open(test_output, 'r') as f:
             assert f.read() == ""

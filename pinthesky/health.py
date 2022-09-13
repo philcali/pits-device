@@ -113,7 +113,7 @@ class DeviceHealth(Handler, ShadowConfigHandler):
             context = dict(context, **metric.report())
         self.events.fire_event('health_end', context)
         self.last_flush_time = datetime.utcnow()
-        logger.info('Emitted health metric data')
+        logger.debug('Emitted health metric data')
         return context
 
     def emit_health(self, force=False):
