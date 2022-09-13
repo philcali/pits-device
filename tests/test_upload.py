@@ -61,7 +61,7 @@ def test_upload(bsession):
 
 
 @patch('boto3.Session')
-def test_upload(bsession):
+def test_image_upload(bsession):
     events = EventThread()
     session = Session(
         cert_path="cert_path",
