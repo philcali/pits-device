@@ -18,7 +18,7 @@ class Output(Handler):
         self.write_lock = Lock()
 
     def __on_event(self, event):
-        logger.info(f'Flushing {event["name"]} to {self.output_file}')
+        logger.debug(f'Flushing {event["name"]} to {self.output_file}')
         # Augment the thing name in outbound messages
         if self.thing_name is not None:
             event["thing_name"] = self.thing_name
@@ -26,16 +26,7 @@ class Output(Handler):
             with open(self.output_file, 'w') as f:
                 f.write(json.dumps(event))
 
-    def on_motion_start(self, event):
-        self.__on_event(event)
-
-    def on_combine_end(self, event):
-        self.__on_event(event)
-
     def on_upload_end(self, event):
-        self.__on_event(event)
-
-    def on_capture_image_end(self, event):
         self.__on_event(event)
 
     def on_health_end(self, event):
