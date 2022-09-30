@@ -3,3 +3,4 @@ requests
 inotify-simple
 numpy
 picamera
+psutil

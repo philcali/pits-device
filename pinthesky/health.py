@@ -1,5 +1,7 @@
 import logging
 import re
+import os
+import psutil
 import shutil
 import socket
 from datetime import datetime, timedelta
@@ -22,6 +24,16 @@ class DeviceDiskMetric(DeviceHealthMetric):
         fields = ['free', 'used', 'total']
         usage = shutil.disk_usage(path='/')
         return dict([(f'disk_{key}', getattr(usage, key)) for key in fields])
+
+
+class DeviceCpuMetric(DeviceHealthMetric):
+    def report(self):
+        cpu_percent = psutil.cpu_percent()
+        cpu_count = os.cpu_count()
+        return {
+            'cpu_used': cpu_percent,
+            'cpu_count': cpu_count
+        }
 
 
 class DeviceMemoryMetric(DeviceHealthMetric):
@@ -73,6 +85,7 @@ class DeviceHealth(Handler, ShadowConfigHandler):
                 DeviceHostRunningTime(),
                 DeviceMemoryMetric(),
                 DeviceDiskMetric(),
+                DeviceCpuMetric(),
                 DeviceHostAddress()
             ]) -> None:
         self.events = events
