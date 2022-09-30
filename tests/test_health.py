@@ -39,10 +39,10 @@ def test_device_health_flush():
             'recording': True
         })
         events.fire_event('flush_end')
-        while not events.event_queue.empty():
+        while events.event_queue.unfinished_tasks > 0:
             pass
         assert device_health.emit_health()
-        while not events.event_queue.empty():
+        while events.event_queue.unfinished_tasks > 0:
             pass
         with output.write_lock:
             with open(output_file, 'r') as f:
@@ -53,6 +53,8 @@ def test_device_health_flush():
         validate_existence = [
             'start_time',
             'up_time',
+            'cpu_count',
+            'cpu_used',
             'disk_total',
             'disk_free',
             'disk_used',

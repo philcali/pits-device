@@ -71,9 +71,9 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.__stream_class = PiCameraCircularIO
         kwargs = {'bitrate': self.encoding_bitrate}
         if self.buffer_size is not None:
-            kwargs = {'size': self.buffer_size}
+            kwargs['size'] = self.buffer_size
         else:
-            kwargs = {'seconds': self.buffer // 2}
+            kwargs['seconds'] = self.buffer // 2
         return self.__stream_class(self.camera, **kwargs)
 
     def __new_camera(self):

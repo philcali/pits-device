@@ -30,7 +30,8 @@ setup(
         'requests',
         'numpy',
         'inotify-simple',
-        'picamera'
+        'picamera',
+        'psutil'
     ],
     extras_require={
         'test': ['pytest', 'requests-mock']

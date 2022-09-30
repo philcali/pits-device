@@ -1,7 +1,10 @@
+from time import sleep
 from unittest import mock
+import pinthesky
 from pinthesky.config import ConfigUpdate
 from pinthesky.events import EventThread
 from pinthesky.camera import CameraThread
+from tests.test_handler import TestHandler
 
 
 def test_configuration_change():
@@ -59,6 +62,73 @@ def test_configuration_change():
     assert camera.camera.resolution == (320, 240)
     assert camera.camera.stop_recording.is_called
     assert camera.camera.start_recording.is_called
+
+
+def test_capture_image():
+    camera_class = mock.MagicMock
+    stream_class = mock.MagicMock
+    motion_class = mock.MagicMock
+    test_handler = TestHandler()
+    events = EventThread()
+    camera = CameraThread(
+        events=events,
+        camera_class=camera_class,
+        stream_class=stream_class,
+        motion_detection_class=motion_class,
+        sensitivity=10,
+        resolution=(640, 480),
+        framerate=20,
+        rotation=270,
+        buffer=15,
+        recording_window="0-23"
+    )
+    events.on(camera)
+    events.on(test_handler)
+    events.start()
+    events.fire_event('capture_image', {
+        'file_name': 'test_image.jpg',
+    })
+    while not hasattr(test_handler, 'calls'):
+        pass
+    assert test_handler.calls['capture_image_end'] == 1
+
+
+def test_camera_run():
+    pinthesky.set_stream_logger()
+    camera_class = mock.MagicMock
+    stream_class = mock.MagicMock()
+    motion_class = mock.MagicMock
+    stream_object = mock.MagicMock()
+    stream_class.return_value = stream_object
+    stream_object.copy_to = mock.MagicMock()
+    stream_object.clear = mock.MagicMock()
+    test_handler = TestHandler()
+    events = EventThread()
+    camera = CameraThread(
+        events=events,
+        camera_class=camera_class,
+        stream_class=stream_class,
+        motion_detection_class=motion_class,
+        sensitivity=10,
+        resolution=(640, 480),
+        framerate=20,
+        rotation=270,
+        buffer=0.01,
+        buffer_size=10000,
+        recording_window="0-23"
+    )
+    events.on(camera)
+    events.on(test_handler)
+    events.start()
+    try:
+        camera.start()
+        events.fire_event('motion_start')
+        # Marginal sleep induced by flush buffer
+        sleep(0.1)
+        assert test_handler.calls['flush_end'] == 1
+        stream_object.clear.assert_called_once()
+    finally:
+        camera.stop()
 
 
 def test_configuration_update():
