@@ -267,7 +267,7 @@ __configure_camera() {
     printf $PMPT "Configure other camera properties? [y/n]"
     read -r CONFIGURE_CAMERA
     if [ "$CONFIGURE_CAMERA" = 'y' ]; then
-        for CAMERA_FIELD in capture combine; do
+        for CAMERA_FIELD in capture combine jobs; do
             VAR_NME="DEFAULT_${CAMERA_FIELD^^}_DIR"
             VAR_VAL=${!VAR_NME}
             printf $PMPT "Set the camera $CAMERA_FIELD directory [$VAR_VAL]:"
@@ -324,6 +324,7 @@ __configure_device_client() {
         if [ "$CLIENT_MACHINE" = 'y' ]; then
             scp install_device_client.sh $HOST_MACHINE:~/install_device_client.sh
             scp aws-iot-device-client.json $HOST_MACHINE:~/aws-iot-device-client.json
+            scp upgrade-pinthesky.sh $HOST_MACHINE:~/upgrade-pinthesky.sh
             rm install_device_client.sh aws-iot-device-client.json
         fi
         if [ -z "$($COMMAND_PREFIX ls -1 /sbin | grep aws-iot-device-client)" ]; then
