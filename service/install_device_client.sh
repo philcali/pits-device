@@ -52,7 +52,17 @@ EOL
 configure_device_client() {
     echo "Configuring AWS IoT Device Client"
     . /etc/pinthesky/pinthesky.env
-    for replacement in THING_CERT THING_KEY THING_NAME CA_CERT DATA_ENDPOINT EVENT_INPUT EVENT_OUTPUT CONFIGURE_INPUT CONFIGURE_OUTPUT; do
+
+    if [ ! -z "$JOBS_DIR" ]; then
+        mkdir -p $JOBS_DIR
+        git clone https://github.com/awslabs/aws-iot-device-client
+        cp aws-iot-device-client/sample-job-handlers/*.sh $JOBS_DIR/
+        mv upgrade-pinthesky.sh $JOBS_DIR/
+        chmod 700 $JOBS_DIR/*.sh
+        rm -rf aws-iot-device-client
+    fi
+
+    for replacement in THING_CERT THING_KEY THING_NAME CA_CERT DATA_ENDPOINT EVENT_INPUT EVENT_OUTPUT CONFIGURE_INPUT CONFIGURE_OUTPUT JOBS_DIR; do
         if [ -f "${!replacement}" ] && [ $replacement = 'CONFIGURE_INPUT' ] || [ $replacement = 'CONFIGURE_OUTPUT' ]; then
             chmod 600 "${!replacement}"
         fi

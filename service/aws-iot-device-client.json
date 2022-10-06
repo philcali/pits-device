@@ -9,7 +9,8 @@
         "type": "STDOUT"
     },
     "jobs": {
-        "enabled": false
+        "enabled": true,
+        "handler-directory": "JOBS_DIR"
     },
     "tunneling": {
         "enabled": false

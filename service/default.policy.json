@@ -11,10 +11,8 @@
             "Action": "iot:Publish",
             "Resource": [
                 "arn:PARTITION:iot:REGION:ACCOUNT:topic/pinthesky/events/output",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/name/pinthesky/get",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/name/pinthesky/update",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/start-next",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update"
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/name/pinthesky/*",
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*"
             ]
         },
         {
@@ -23,8 +21,7 @@
             "Resource": [
                 "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/pinthesky/events/${iot:Connection.Thing.ThingName}/input",
                 "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/shadow/name/pinthesky*",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*-next/*",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update/*"
+                "arn:PARTITION:iot:REGION:ACCOUNT:topicfilter/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*"
             ]
         },
         {
@@ -33,8 +30,7 @@
             "Resource": [
                 "arn:PARTITION:iot:REGION:ACCOUNT:topic/pinthesky/events/${iot:Connection.Thing.ThingName}/input",
                 "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/name/pinthesky/*",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*-next/*",
-                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*/update/*"
+                "arn:PARTITION:iot:REGION:ACCOUNT:topic/$aws/things/${iot:Connection.Thing.ThingName}/jobs/*"
             ]
         },
         {
