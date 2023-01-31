@@ -2,6 +2,7 @@
 
 INSPECTION_LOG="pits.inspection.log"
 REMOVE_LOG="pits.remove.log"
+INSTALL_LOG="pits.install.log"
 PITS_ENV="pits.env"
 
 function pits::setup::invoke() {
@@ -131,10 +132,6 @@ function pits::setup::inspect::device_client() {
             echo "[-] Configured systemd aws-iot-device-client"
         fi
     } >> "$INSPECTION_LOG"
-}
-
-function pits::setup::connection::root() {
-    wheel::state::set "assumeRoot" true argjson
 }
 
 function pits::setup::remove::toggle() {
@@ -272,9 +269,23 @@ function pits::setup::connection::result() {
     wheel::screens::msgbox
 }
 
+function pits::setup::install::pinthesky_software() {
+    if [ -z "$(pits::setup::invoke which pinthesky)" ]; then
+        if pits::setup::invoke pip3 install pinthesky; then
+            echo "[+] Installed pinthesky" >> "$INSTALL_LOG"
+        else
+            echo "[-] Failed to install pinthesky" >> "$INSTALL_LOG"
+        fi
+    else
+        echo "[+] Already installed pinthesky" >> "$INSTALL_LOG"
+    fi
+}
+
 touch "$INSPECTION_LOG"
 touch "$REMOVE_LOG"
+touch "$INSTALL_LOG"
 touch "$PITS_ENV"
 wheel::events::add_clean_up "rm $INSPECTION_LOG"
 wheel::events::add_clean_up "rm $REMOVE_LOG"
+wheel::events::add_clean_up "rm $INSTALL_LOG"
 wheel::events::add_clean_up "rm $PITS_ENV"

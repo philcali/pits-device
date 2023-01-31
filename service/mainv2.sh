@@ -2,16 +2,18 @@
 
 cat << EOF > defaults.json
 {
-    "thingName": "PinTheSkyThing",
-    "thingGRoup": "PinTheSkyGroup",
-    "roleAlias": "PinTheSkyRoleAlias",
-    "roleName": "PinTheSkyRole",
-    "thingPolicy": "PinTheSkyThingPolicy",
+    "cloud": {
+        "thingName": "PinTheSkyThing",
+        "thingGroup": "PinTheSkyGroup",
+        "roleAlias": "PinTheSkyRoleAlias",
+        "roleName": "PinTheSkyRole",
+        "thingPolicy": "PinTheSkyThingPolicy"
+    },
     "bucket": {
         "videoPrefix": "motion_videos",
         "imagePrefix": "capture_images"
     },
-    "paths": {
+    "device": {
         "eventInput": "/usr/share/pinthesky/events/input.json",
         "eventOoutput": "/usr/share/pinthesky/events/output.json",
         "configurationInput": "/usr/share/pinthesky/configuration/input.json",
@@ -92,6 +94,128 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
             },
             "handlers": {
                 "ok": "wheel::screens::hub::selection"
+            }
+        },
+        "Install": {
+            "type": "hub",
+            "clear_history": true,
+            "dialog": {
+                "cancel-label": "Back",
+                "extra-button": true,
+                "extra-label": "Install"
+            },
+            "properties": {
+                "items": [
+                    {
+                        "name": "Cloud Configuration",
+                        "description": "Creates and configures AWS resources"
+                    },
+                    {
+                        "name": "Device Software",
+                        "description": "Installs pinthesky software"
+                    },
+                    {
+                        "name": "Device Configuration",
+                        "description": "Installs and configures pinthesky"
+                    },
+                    {
+                        "name": "Camera Configuration",
+                        "description": "Configures camera settings"
+                    },
+                    {
+                        "name": "Device Client",
+                        "description": "Installs and configures AWS IoT device client"
+                    },
+                    {
+                        "name": "Service Configuration",
+                        "description": "Installs and configures systemd services"
+                    }
+                ]
+            },
+            "handlers": {
+                "ok": "wheel::screens::hub::selection"
+            },
+            "back": "Main Menu"
+        },
+        "Cloud Configuration": {
+            "type": "form",
+            "capture_into": "cloud",
+            "properties": {
+                "items": [
+                    {
+                        "name": "Thing Name:",
+                        "length": 60,
+                        "configures": "thingName"
+                    },
+                    {
+                        "name": "Thing Policy:",
+                        "length": 60,
+                        "configures": "thingPolicy"
+                    },
+                    {
+                        "name": "Thing Group:",
+                        "length": 60,
+                        "configures": "thingGroup"
+                    },
+                    {
+                        "name": "Role Name:",
+                        "length": 60,
+                        "configures": "roleName"
+                    },
+                    {
+                        "name": "Role Alias:",
+                        "length": 60,
+                        "configures": "roleAlias"
+                    }
+                ]
+            }
+        },
+        "Camera Configuration": {
+            "type": "hub",
+            "properties": {
+                "items": [
+                    {
+                        "name": "Buffer",
+                        "description": "Seconds to buffer recorded video"
+                    },
+                    {
+                        "name": "Sensitivity",
+                        "description": "Motion sensitivity"
+                    },
+                    {
+                        "name": "Framerate",
+                        "description": "The framerate of the recording"
+                    },
+                    {
+                        "name": "Rotation",
+                        "description": "Rotation of the camera"
+                    },
+                    {
+                        "name": "Resolution",
+                        "description": "The resolution of the camera"
+                    }
+                ]
+            },
+            "handlers": {
+                "ok": "wheel::screens::hub::selection"
+            }
+        },
+        "Buffer": {
+            "type": "range",
+            "capture_into": "camera.buffer",
+            "dialog": {
+                "cancel-label": "Back"
+            },
+            "properties": {
+                "max": 60,
+                "min": 1,
+                "default": "\$state.camera.buffer",
+                "text": "Seconds for motion recording:",
+                "width": 70
+            },
+            "handlers": {
+                "capture_into": "wheel::handlers::capture_into::argjson",
+                "ok": "wheel::handlers::cancel"
             }
         },
         "Remove": {
@@ -260,7 +384,7 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                 "text": "Can I assume root privileges?"
             },
             "handlers": {
-                "capture_into": "pits::setup::connection::root"
+                "capture_into": "wheel::handlers::flag"
             },
             "next": "Command Settings"
         },

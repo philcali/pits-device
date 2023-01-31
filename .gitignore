@@ -2,3 +2,5 @@ __pycache__
 *.egg-info
 .coverage
 coverage.xml
+pitsctl.log
+state.json
