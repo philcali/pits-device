@@ -14,23 +14,31 @@ cat << EOF > defaults.json
         "imagePrefix": "capture_images"
     },
     "device": {
-        "eventInput": "/usr/share/pinthesky/events/input.json",
-        "eventOoutput": "/usr/share/pinthesky/events/output.json",
-        "configurationInput": "/usr/share/pinthesky/configuration/input.json",
-        "configurationOutput": "/usr/share/pinthesky/configuration/output.json",
-        "jobHandlers": "/usr/share/pinthesky/job/handlers",
-        "combinePath": "/usr/share/pinthesky/motion_videos",
-        "capturePath": "/usr/share/pinthesky/capture_images"
+        "paths": {
+            "eventInput": "/usr/share/pinthesky/events/input.json",
+            "eventOutput": "/usr/share/pinthesky/events/output.json",
+            "configurationInput": "/usr/share/pinthesky/configuration/input.json",
+            "configurationOutput": "/usr/share/pinthesky/configuration/output.json",
+            "jobHandlers": "/usr/share/pinthesky/job/handlers",
+            "combine": "/usr/share/pinthesky/motion_videos",
+            "capture": "/usr/share/pinthesky/capture_images"
+        },
+        "healthInterval": 3600
     },
     "camera": {
         "sensitivity": 10,
         "framerate": 20,
         "rotation": 0,
         "buffer": 15,
-        "resolution": "640x480",
-        "encodingLevel": 4,
-        "encodingProfile": "high",
-        "healthInterval": 3600
+        "resolution": {
+            "width": 640,
+            "height": 480
+        },
+        "encoding": {
+            "level": 4,
+            "profile": "high",
+            "bitrate": "17000000"
+        }
     },
     "assumeRoot": true,
     "machineHost": "pi@192.168.1.237"
@@ -45,6 +53,9 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
     "dialog": {
         "colors": true,
         "backtitle": "Pi In The Sky - Setup Wizard"
+    },
+    "handlers": {
+        "esc": "wheel::handlers::cancel"
     },
     "properties": {
         "aspect": 20
@@ -140,6 +151,11 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
         "Cloud Configuration": {
             "type": "form",
             "capture_into": "cloud",
+            "dialog": {
+                "cancel-label": "Back",
+                "extra-button": true,
+                "extra-label": "Validate"
+            },
             "properties": {
                 "items": [
                     {
@@ -170,8 +186,104 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                 ]
             }
         },
+        "Device Configuration": {
+            "type": "hub",
+            "dialog": {
+                "cancel-label": "Back"
+            },
+            "properties": {
+                "items": [
+                    {
+                        "name": "Configuration Paths",
+                        "description": "File and folder locations for pinthesky"
+                    },
+                    {
+                        "name": "Health Check Interval",
+                        "description": "Rate in seconds for post health checks"
+                    }
+                ]
+            },
+            "handlers": {
+                "ok": "wheel::screens::hub::selection"
+            }
+        },
+        "Configuration Paths": {
+            "type": "form",
+            "capture_into": "device.paths",
+            "dialog": {
+                "cancel-label": "Back"
+            },
+            "properties": {
+                "box_height": 8,
+                "items": [
+                    {
+                        "name": "Event Input:",
+                        "length": 80,
+                        "max": 256,
+                        "configures": "eventInput"
+                    },
+                    {
+                        "name": "Event Output:",
+                        "length": 80,
+                        "max": 256,
+                        "configures": "eventOutput"
+                    },
+                    {
+                        "name": "Configuration Input:",
+                        "length": 80,
+                        "max": 256,
+                        "configures": "configurationInput"
+                    },
+                    {
+                        "name": "Configuration Output:",
+                        "length": 80,
+                        "max": 256,
+                        "configures": "configurationOutput"
+                    },
+                    {
+                        "name": "Job Handlers:",
+                        "length": 80,
+                        "max": 256,
+                        "configures": "jobHandlers"
+                    },
+                    {
+                        "name": "Combine Directory:",
+                        "length": 80,
+                        "max": 256,
+                        "configures": "combine"
+                    },
+                    {
+                        "name": "Image Capture Directory:",
+                        "length": 80,
+                        "max": 256,
+                        "configures": "capture"
+                    }
+                ]
+            },
+            "handlers": {
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Health Check Interval": {
+            "type": "range",
+            "capture_into": "device.healthInterval",
+            "properties": {
+                "min": 60,
+                "max": 86400,
+                "default": "\$state.device.healthInterval",
+                "text": "Rate in seconds:",
+                "width": 70
+            },
+            "handlers": {
+                "capture_into": "wheel::handlers::capture_into::argjson",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
         "Camera Configuration": {
             "type": "hub",
+            "dialog": {
+                "cancel-label": "Back"
+            },
             "properties": {
                 "items": [
                     {
@@ -193,6 +305,10 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                     {
                         "name": "Resolution",
                         "description": "The resolution of the camera"
+                    },
+                    {
+                        "name": "Encoding",
+                        "description": "Configure the encoding profile"
                     }
                 ]
             },
@@ -215,6 +331,123 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
             },
             "handlers": {
                 "capture_into": "wheel::handlers::capture_into::argjson",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Sensitivity": {
+            "type": "range",
+            "capture_into": "camera.sensitivity",
+            "dialog": {
+                "cancel-label": "Back"
+            },
+            "properties": {
+                "max": 50,
+                "min": 1,
+                "default": "\$state.camera.sensitivity",
+                "text": "Motion sensitivity (higher the value, more aggressive the motion):",
+                "width": 70
+            },
+            "handlers": {
+                "capture_into": "wheel::handlers::capture_into::argjson",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Framerate": {
+            "type": "range",
+            "capture_into": "camera.framerate",
+            "dialog": {
+                "cancel-label": "Back"
+            },
+            "properties": {
+                "max": 20,
+                "min": 10,
+                "default": "\$state.camera.framerate",
+                "text": "Recording framerate:",
+                "width": 70
+            },
+            "handlers": {
+                "capture_into": "wheel::handlers::capture_into::argjson",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Rotation": {
+            "type": "radiolist",
+            "capture_into": "camera.rotation",
+            "properties": {
+                "text": "Select the rotation degrees:",
+                "items": [
+                    {
+                        "name": "0",
+                        "description": "No rotation"
+                    },
+                    {
+                        "name": "90",
+                        "description": "Rotating 90 degrees"
+                    },
+                    {
+                        "name": "180",
+                        "description": "Rotating 180 degrees"
+                    },
+                    {
+                        "name": "270",
+                        "description": "Rotating 270 degrees"
+                    }
+                ]
+            },
+            "handlers": {
+                "capture_into": "wheel::handlers::capture_into::argjson",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Resolution": {
+            "type": "form",
+            "capture_into": "camera.resolution",
+            "properties": {
+                "text": "Value in pixels:",
+                "items": [
+                    {
+                        "name": "Width:",
+                        "length": 5,
+                        "configures": "width"
+                    },
+                    {
+                        "name": "Height:",
+                        "length": 5,
+                        "configures": "height"
+                    }
+                ]
+            },
+            "handlers": {
+                "capture_into": "wheel::screens::form::save",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Encoding": {
+            "type": "form",
+            "capture_into": "camera.encoding",
+            "properties": {
+                "width": 70,
+                "text": "\\\Zb\\\Z1Warning\\\Zn: Do not edit unless you understand encoding configuration.",
+                "items": [
+                    {
+                        "name": "Level:",
+                        "length": 5,
+                        "configures": "level"
+                    },
+                    {
+                        "name": "Profile:",
+                        "length": 10,
+                        "configures": "profile"
+                    },
+                    {
+                        "name": "Bitrate:",
+                        "length": 20,
+                        "configures": "bitrate"
+                    }
+                ]
+            },
+            "handlers": {
+                "capture_into": "wheel::screens::form::save",
                 "ok": "wheel::handlers::cancel"
             }
         },
