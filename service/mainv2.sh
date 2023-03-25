@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
+VERSION=0.5.1
 RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
+ASSUME_ROOT="false"
+MACHINE_HOST=""
+LOG_LEVEL="INFO"
 
 download_resource() {
     local RESOURCE_FILE=$1
@@ -43,6 +47,37 @@ install_dialog_wheel() {
     done
     popd && rmdir dialog-wheel
 }
+
+usage() {
+    echo "Usage: $(basename "$0") - v$VERSION: Install or manage pinthesky software"
+    echo "  -h,--help:    Prints out this help message"
+    echo "  -m,--host:    Client machine connection details"
+    echo "  -r,--root:    Assume root permission for management"
+    echo "  -v,--version: Prints the version and exists"
+}
+
+parse_args() {
+    while [ -n "$*" ]; do
+        local param=$1
+        case "$param" in
+        -r|--root)
+            ASSUME_ROOT="true";;
+        -m|--host)
+            shift
+            MACHINE_HOST=$1;;
+        -l|--level)
+            shift
+            LOG_LEVEL=$1;;
+        -v|--version)
+            echo "$VERSION" && return 1;;
+        -h|--help)
+            usage && return 1;;
+        esac
+        shift
+    done
+}
+
+parse_args "$@" || exit 0
 
 cat << EOF > defaults.json
 {
@@ -101,7 +136,8 @@ cat << EOF > defaults.json
             "bitrate": "17000000"
         }
     },
-    "assume_root": true
+    "assume_root": $ASSUME_ROOT,
+    "machine_host": "$MACHINE_HOST"
 }
 EOF
 
@@ -110,10 +146,11 @@ trap "rm -rf defaults.json" EXIT
 command -v dialog-wheel > /dev/null || install_dialog_wheel || exit 1
 workflow_script=$(import_function "$0" "workflow.sh")
 
-cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L INFO
+cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
 {
     "version": "1.0.0",
     "dialog": {
+        "program": "wheel::dialog::app",
         "colors": true,
         "backtitle": "Pi In The Sky - Setup Wizard"
     },
