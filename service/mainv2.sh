@@ -1,35 +1,96 @@
 #!/usr/bin/env bash
 
+RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
+
+download_resource() {
+    local RESOURCE_FILE=$1
+
+    if [ ! -f "service/pitsctl/$RESOURCE_FILE" ]; then
+        # Pull from CDN
+        wget -O "$RESOURCE_FILE" "$RAW_CONTENT_URL/service/pitsctl/$RESOURCE_FILE"
+        return 0
+    fi
+    return 1
+}
+
+import_function() {
+    local resolve_path=$1
+    local import_file=$2
+    local self_path 
+    self_path=$(realpath "$resolve_path")
+    local self_dir
+    self_dir=$(dirname "$self_path")
+    local script_file="$self_dir/pitsctl/$import_file"
+    if [ ! -f "$script_file" ] && download_resource "$import_file"; then
+        if [ ! -d "$(dirname "$script_file")" ]; then
+            mkdir -p "$(dirname "$script_file")"
+        fi
+        mv "$import_file" "$script_file"
+    fi
+    echo "$script_file"
+}
+
+install_dialog_wheel() {
+    git clone https://github.com/philcali/dialog-wheel.git
+    pushd dialog-wheel || return 1
+    ./dev.build.sh || return 1
+
+    local paths
+    IFS=':' read -r -a paths <<< "$PATH"
+    for path in "${paths[@]}"
+    do  
+        mv dialog-wheel "$path/" && echo "Installed dialog-wheel in $path" && break
+    done
+    popd && rmdir dialog-wheel
+}
+
 cat << EOF > defaults.json
 {
     "cloud": {
-        "thingName": "PinTheSkyThing",
-        "thingGroup": "PinTheSkyGroup",
-        "roleAlias": "PinTheSkyRoleAlias",
-        "roleName": "PinTheSkyRole",
-        "thingPolicy": "PinTheSkyThingPolicy"
+        "thing_name": "PinTheSkyThing",
+        "thing_group": "PinTheSkyGroup",
+        "role_alias": "PinTheSkyRoleAlias",
+        "role_name": "PinTheSkyRole",
+        "thing_policy": "PinTheSkyThingPolicy",
+        "create_certificates": true
     },
-    "bucket": {
-        "videoPrefix": "motion_videos",
-        "imagePrefix": "capture_images"
+    "storage": {
+        "bucket": "$USER-pinthesky-storage",
+        "policy_name": "$USER-pinthesky-storage-policy",
+        "video_prefix": "motion_videos",
+        "image_prefix": "capture_images"
+    },
+    "software": {
+        "install": "Current",
+        "service": "Nothing"
+    },
+    "client": {
+        "install_software": true,
+        "install_job_handlers": true,
+        "install_configuration": true,
+        "install_service": true
     },
     "device": {
         "paths": {
-            "eventInput": "/usr/share/pinthesky/events/input.json",
-            "eventOutput": "/usr/share/pinthesky/events/output.json",
-            "configurationInput": "/usr/share/pinthesky/configuration/input.json",
-            "configurationOutput": "/usr/share/pinthesky/configuration/output.json",
-            "jobHandlers": "/usr/share/pinthesky/job/handlers",
-            "combine": "/usr/share/pinthesky/motion_videos",
-            "capture": "/usr/share/pinthesky/capture_images"
+            "event_input": "/usr/share/pinthesky/events/input.json",
+            "event_output": "/usr/share/pinthesky/events/output.json",
+            "configure_input": "/usr/share/pinthesky/configuration/input.json",
+            "configure_output": "/usr/share/pinthesky/configuration/output.json",
+            "jobs_dir": "/usr/share/pinthesky/job/handlers",
+            "combine_dir": "/usr/share/pinthesky/motion_videos",
+            "capture_dir": "/usr/share/pinthesky/capture_images"
         },
-        "healthInterval": 3600
+        "health_interval": 3600
     },
     "camera": {
         "sensitivity": 10,
         "framerate": 20,
         "rotation": 0,
         "buffer": 15,
+        "recording_window": {
+            "start": 0,
+            "end": 23
+        },
         "resolution": {
             "width": 640,
             "height": 480
@@ -40,14 +101,16 @@ cat << EOF > defaults.json
             "bitrate": "17000000"
         }
     },
-    "assumeRoot": true,
-    "machineHost": "pi@192.168.1.237"
+    "assume_root": true
 }
 EOF
 
 trap "rm -rf defaults.json" EXIT
 
-cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
+command -v dialog-wheel > /dev/null || install_dialog_wheel || exit 1
+workflow_script=$(import_function "$0" "workflow.sh")
+
+cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L INFO
 {
     "version": "1.0.0",
     "dialog": {
@@ -62,8 +125,7 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
     },
     "includes": [
         {
-            "directory": "$PWD",
-            "file": "workflow.sh"
+            "file": "$workflow_script"
         }
     ],
     "start": "Welcome",
@@ -111,6 +173,7 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
             "type": "hub",
             "clear_history": true,
             "dialog": {
+                "ok-label": "Configure",
                 "cancel-label": "Back",
                 "extra-button": true,
                 "extra-label": "Install"
@@ -120,6 +183,10 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                     {
                         "name": "Cloud Configuration",
                         "description": "Creates and configures AWS resources"
+                    },
+                    {
+                        "name": "Storage Configuration",
+                        "description": "Manages remote storage of images and videos"
                     },
                     {
                         "name": "Device Software",
@@ -143,12 +210,116 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                     }
                 ]
             },
+            "next": "Review and Install",
             "handlers": {
-                "ok": "wheel::screens::hub::selection"
+                "ok": "wheel::screens::hub::selection",
+                "extra": "wheel::handlers::ok"
             },
             "back": "Main Menu"
         },
+        "Review and Install": {
+            "type": "yesno",
+            "properties": {
+                "text": "Are you ready to begin the install?"
+            },
+            "next": "Install Gauge"
+        },
+        "Install Gauge": {
+            "type": "custom",
+            "entrypoint": "pits::setup::install::device",
+            "managed": true,
+            "properties": {
+                "width": 70,
+                "actions": []
+            },
+            "next": "Install Results"
+        },
+        "Install Results": {
+            "type": "textbox",
+            "dialog": {
+                "exit-label": "Back"
+            },
+            "properties": {
+                "text": "pits.install.log"
+            },
+            "next": "Main Menu"
+        },
         "Cloud Configuration": {
+            "type": "hub",
+            "clear_history": true,
+            "dialog": {
+                "ok-label": "Configure",
+                "cancel-label": "Back"
+            },
+            "properties": {
+                "items": [
+                    {
+                        "name": "AWS IoT Configuration",
+                        "description": "Creates and configures AWS IoT Associations"
+                    },
+                    {
+                        "name": "Create Certificates",
+                        "description": "Creates and associates AWS IoT Certificates"
+                    }
+                ]
+            },
+            "handlers": {
+                "ok": "wheel::screens::hub::selection"
+            },
+            "back": "Install"
+        },
+        "Create Certificates": {
+            "type": "yesno",
+            "capture_into": "cloud.create_certificates",
+            "properties": {
+                "text": "Create new AWS IoT Certificates?\nCurrent Value: [\\\Zb\$state.cloud.create_certificates\\\ZB]"
+            },
+            "handlers": {
+                "capture_into": "wheel::handlers::flag",
+                "ok": "wheel::handlers::cancel",
+                "cancel": [
+                    "wheel::handlers::flag",
+                    "wheel::handlers::cancel"
+                ]
+            },
+            "next": "Cloud Configuration"
+        },
+        "Storage Configuration": {
+            "type": "form",
+            "capture_into": "storage",
+            "dialog": {
+                "cancel-label": "Back"
+            },
+            "properties": {
+                "items": [
+                    {
+                        "name": "Bucket:",
+                        "length": 64,
+                        "configures": "bucket"
+                    },
+                    {
+                        "name": "Role Policy:",
+                        "length": 60,
+                        "configures": "policy_name"
+                    },
+                    {
+                        "name": "Motion Video Prefix:",
+                        "length": 64,
+                        "configures": "video_prefix"
+                    },
+                    {
+                        "name": "Image Capture Prefix:",
+                        "length": 64,
+                        "configures": "image_prefix"
+                    }
+                ]
+            },
+            "handlers": {
+                "capture_into": "wheel::screens::form::save",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "AWS IoT Configuration": {
             "type": "form",
             "capture_into": "cloud",
             "dialog": {
@@ -161,29 +332,57 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                     {
                         "name": "Thing Name:",
                         "length": 60,
-                        "configures": "thingName"
+                        "configures": "thing_name"
                     },
                     {
                         "name": "Thing Policy:",
                         "length": 60,
-                        "configures": "thingPolicy"
+                        "configures": "thing_policy"
                     },
                     {
                         "name": "Thing Group:",
                         "length": 60,
-                        "configures": "thingGroup"
+                        "configures": "thing_group"
                     },
                     {
                         "name": "Role Name:",
                         "length": 60,
-                        "configures": "roleName"
+                        "configures": "role_name"
                     },
                     {
                         "name": "Role Alias:",
                         "length": 60,
-                        "configures": "roleAlias"
+                        "configures": "role_alias"
                     }
                 ]
+            },
+            "handlers": {
+                "capture_into": "wheel::screens::form::save",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Device Software": {
+            "type": "radiolist",
+            "capture_into": "software.install",
+            "properties": {
+                "text": "Select behavior:",
+                "items": [
+                    {
+                        "name": "Current",
+                        "description": "Only installs if a version is not installed"
+                    },
+                    {
+                        "name": "Latest",
+                        "description": "Installs or updates to latest version"
+                    },
+                    {
+                        "name": "Nothing",
+                        "description": "Do not attempt an installation"
+                    }
+                ]
+            },
+            "handlers": {
+                "ok": "wheel::handlers::cancel"
             }
         },
         "Device Configuration": {
@@ -220,62 +419,120 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                         "name": "Event Input:",
                         "length": 80,
                         "max": 256,
-                        "configures": "eventInput"
+                        "configures": "event_input"
                     },
                     {
                         "name": "Event Output:",
                         "length": 80,
                         "max": 256,
-                        "configures": "eventOutput"
+                        "configures": "event_output"
                     },
                     {
                         "name": "Configuration Input:",
                         "length": 80,
                         "max": 256,
-                        "configures": "configurationInput"
+                        "configures": "configure_input"
                     },
                     {
                         "name": "Configuration Output:",
                         "length": 80,
                         "max": 256,
-                        "configures": "configurationOutput"
+                        "configures": "configure_output"
                     },
                     {
                         "name": "Job Handlers:",
                         "length": 80,
                         "max": 256,
-                        "configures": "jobHandlers"
+                        "configures": "jobs_dir"
                     },
                     {
                         "name": "Combine Directory:",
                         "length": 80,
                         "max": 256,
-                        "configures": "combine"
+                        "configures": "combine_dir"
                     },
                     {
                         "name": "Image Capture Directory:",
                         "length": 80,
                         "max": 256,
-                        "configures": "capture"
+                        "configures": "capture_dir"
                     }
                 ]
             },
             "handlers": {
+                "capture_into": "wheel::screens::form::save",
                 "ok": "wheel::handlers::cancel"
             }
         },
         "Health Check Interval": {
             "type": "range",
-            "capture_into": "device.healthInterval",
+            "capture_into": "device.health_interval",
             "properties": {
                 "min": 60,
                 "max": 86400,
-                "default": "\$state.device.healthInterval",
+                "default": "\$state.device.health_interval",
                 "text": "Rate in seconds:",
                 "width": 70
             },
             "handlers": {
                 "capture_into": "wheel::handlers::capture_into::argjson",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Device Client": {
+            "type": "checklist",
+            "capture_into": "client",
+            "properties": {
+                "text": "AWS Device Client installation actions:",
+                "items": [
+                    {
+                        "name": "Software",
+                        "description": "Installs the device client software",
+                        "configures": "client.install_software"
+                    },
+                    {
+                        "name": "Jobs",
+                        "description": "Installs the job handlers",
+                        "configures": "client.install_job_handlers"
+                    },
+                    {
+                        "name": "Configuration",
+                        "description": "Installs the device client configuration",
+                        "configures": "client.install_configuration"
+                    },
+                    {
+                        "name": "Service",
+                        "description": "Installs the systemd service unit",
+                        "configures": "client.install_service"
+                    }
+                ]
+            },
+            "handlers": {
+                "capture_into": "wheel::screens::checklist::field",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
+        "Service Configuration": {
+            "type": "radiolist",
+            "capture_into": "software.service",
+            "properties": {
+                "text": "Configure pinthesky service action:",
+                "items": [
+                    {
+                        "name": "Enable",
+                        "description": "Installs and enables the pinthesky systemd service"
+                    },
+                    {
+                        "name": "Install",
+                        "description": "Installs the pinthesky systemd service"
+                    },
+                    {
+                        "name": "Nothing",
+                        "description": "Does not install the pinthesky systemd service"
+                    }
+                ]
+            },
+            "handlers": {
                 "ok": "wheel::handlers::cancel"
             }
         },
@@ -301,6 +558,10 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                     {
                         "name": "Rotation",
                         "description": "Rotation of the camera"
+                    },
+                    {
+                        "name": "Recording Window",
+                        "description": "The hours when the camera records motion"
                     },
                     {
                         "name": "Resolution",
@@ -399,10 +660,35 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
                 "ok": "wheel::handlers::cancel"
             }
         },
+        "Recording Window": {
+            "type": "form",
+            "capture_into": "camera.recording_window",
+            "properties": {
+                "text": "Values ranging from 0-23:",
+                "width": 70,
+                "items": [
+                    {
+                        "name": "Starting Hour:",
+                        "length": 2,
+                        "configures": "start"
+                    },
+                    {
+                        "name": "Ending Hour:",
+                        "length": 2,
+                        "configures": "end"
+                    }
+                ]
+            },
+            "handlers": {
+                "capture_into": "wheel::screens::form::save",
+                "ok": "wheel::handlers::cancel"
+            }
+        },
         "Resolution": {
             "type": "form",
             "capture_into": "camera.resolution",
             "properties": {
+                "width": 70,
                 "text": "Value in pixels:",
                 "items": [
                     {
@@ -612,18 +898,23 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L DEBUG
         },
         "Assume Root": {
             "type": "yesno",
-            "capture_into": "assumeRoot",
+            "capture_into": "assume_root",
             "properties": {
-                "text": "Can I assume root privileges?"
+                "text": "Can I assume root privileges?\nCurrent Value: [\\\Zb\$state.assume_root\\\ZB]"
             },
             "handlers": {
-                "capture_into": "wheel::handlers::flag"
+                "capture_into": "wheel::handlers::flag",
+                "ok": "wheel::handlers::cancel",
+                "cancel": [
+                    "wheel::handlers::flag",
+                    "wheel::handlers::cancel"
+                ]
             },
             "next": "Command Settings"
         },
         "Connection": {
             "type": "input",
-            "capture_into": "machineHost",
+            "capture_into": "machine_host",
             "properties": {
                 "text": "Enter SSH host details:\\nie \\\Zbpi@hostname\\\ZB"
             },

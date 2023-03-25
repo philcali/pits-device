@@ -23,7 +23,7 @@ You can also use the guided install from your work station to remotely configure
 
 ```
 mkdir -p $HOME/bin \
-    && wget -O $HOME/bin/pitsctl https://raw.githubusercontent.com/philcali/pits-device/main/service/main.sh \
+    && wget -O $HOME/bin/pitsctl https://raw.githubusercontent.com/philcali/pits-device/main/service/mainv2.sh \
     && chmod +x $HOME/bin/pitsctl \
     && pitsctl -h
 ```
