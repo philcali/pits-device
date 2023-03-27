@@ -144,13 +144,15 @@ EOF
 trap "rm -rf defaults.json" EXIT
 
 command -v dialog-wheel > /dev/null || install_dialog_wheel || exit 1
-workflow_script=$(import_function "$0" "workflow.sh")
+common_script=$(import_function "$0" "_common.sh")
+inspect_script=$(import_function "$0" "inspect.sh")
+remove_script=$(import_function "$0" "remove.sh")
+install_script=$(import_function "$0" "install.sh")
 
 cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
 {
     "version": "1.0.0",
     "dialog": {
-        "program": "wheel::dialog::app",
         "colors": true,
         "backtitle": "Pi In The Sky - Setup Wizard"
     },
@@ -162,7 +164,16 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
     },
     "includes": [
         {
-            "file": "$workflow_script"
+            "file": "$common_script"
+        },
+        {
+            "file": "$inspect_script"
+        },
+        {
+            "file": "$remove_script"
+        },
+        {
+            "file": "$install_script"
         }
     ],
     "start": "Welcome",
