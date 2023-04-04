@@ -10,7 +10,7 @@ LOG_LEVEL="INFO"
 download_resource() {
     local RESOURCE_FILE=$1
 
-    if [ ! -f "service/pitsctl/$RESOURCE_FILE" ]; then
+    if [ ! -f "service/pits/$RESOURCE_FILE" ]; then
         # Pull from CDN
         wget -O "$RESOURCE_FILE" "$RAW_CONTENT_URL/service/pitsctl/$RESOURCE_FILE"
         return 0
@@ -25,7 +25,7 @@ import_function() {
     self_path=$(realpath "$resolve_path")
     local self_dir
     self_dir=$(dirname "$self_path")
-    local script_file="$self_dir/pitsctl/$import_file"
+    local script_file="$self_dir/pits/$import_file"
     if [ ! -f "$script_file" ] && download_resource "$import_file"; then
         if [ ! -d "$(dirname "$script_file")" ]; then
             mkdir -p "$(dirname "$script_file")"

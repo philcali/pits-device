@@ -8,9 +8,9 @@ from tests.test_handler import TestHandler
 
 
 def test_configuration_change():
-    camera_class = mock.MagicMock
-    stream_class = mock.MagicMock
-    motion_class = mock.MagicMock
+    camera_class = mock.MagicMock()
+    stream_class = mock.MagicMock()
+    motion_class = mock.MagicMock()
     events = EventThread()
     camera = CameraThread(
         events=events,
@@ -65,9 +65,9 @@ def test_configuration_change():
 
 
 def test_capture_image():
-    camera_class = mock.MagicMock
-    stream_class = mock.MagicMock
-    motion_class = mock.MagicMock
+    camera_class = mock.MagicMock()
+    stream_class = mock.MagicMock()
+    motion_class = mock.MagicMock()
     test_handler = TestHandler()
     events = EventThread()
     camera = CameraThread(
@@ -95,13 +95,11 @@ def test_capture_image():
 
 def test_camera_run():
     pinthesky.set_stream_logger()
-    camera_class = mock.MagicMock
+    camera_class = mock.MagicMock()
     stream_class = mock.MagicMock()
-    motion_class = mock.MagicMock
+    motion_class = mock.MagicMock()
     stream_object = mock.MagicMock()
     stream_class.return_value = stream_object
-    stream_object.copy_to = mock.MagicMock()
-    stream_object.clear = mock.MagicMock()
     test_handler = TestHandler()
     events = EventThread()
     camera = CameraThread(
@@ -132,9 +130,9 @@ def test_camera_run():
 
 
 def test_configuration_update():
-    camera_class = mock.MagicMock
-    stream_class = mock.MagicMock
-    motion_class = mock.MagicMock
+    camera_class = mock.MagicMock()
+    stream_class = mock.MagicMock()
+    motion_class = mock.MagicMock()
     events = EventThread()
     camera = CameraThread(
         events=events,
