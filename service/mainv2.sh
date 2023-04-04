@@ -9,10 +9,11 @@ LOG_LEVEL="INFO"
 
 download_resource() {
     local RESOURCE_FILE=$1
+    local path="service/pits/$RESOURCE_FILE"
 
-    if [ ! -f "service/pits/$RESOURCE_FILE" ]; then
+    if [ ! -f "$path" ]; then
         # Pull from CDN
-        wget -O "$RESOURCE_FILE" "$RAW_CONTENT_URL/service/pitsctl/$RESOURCE_FILE"
+        wget -O "$RESOURCE_FILE" "$RAW_CONTENT_URL/$path"
         return 0
     fi
     return 1
