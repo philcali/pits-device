@@ -4,6 +4,7 @@ VERSION=0.5.1
 RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
 ASSUME_ROOT="false"
 MACHINE_HOST=""
+PROGRAM=""
 LOG_LEVEL="INFO"
 
 download_resource() {
@@ -52,6 +53,7 @@ usage() {
     echo "Usage: $(basename "$0") - v$VERSION: Install or manage pinthesky software"
     echo "  -h,--help:    Prints out this help message"
     echo "  -m,--host:    Client machine connection details"
+    echo "  -t,--text:    Enable a no color, text only view of the application"
     echo "  -r,--root:    Assume root permission for management"
     echo "  -v,--version: Prints the version and exists"
 }
@@ -62,6 +64,8 @@ parse_args() {
         case "$param" in
         -r|--root)
             ASSUME_ROOT="true";;
+        -t|--text)
+            PROGRAM='"program": "wheel::dialog::app",';;
         -m|--host)
             shift
             MACHINE_HOST=$1;;
@@ -149,10 +153,14 @@ inspect_script=$(import_function "$0" "inspect.sh")
 remove_script=$(import_function "$0" "remove.sh")
 install_script=$(import_function "$0" "install.sh")
 
-cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
+START_SCREEN="Welcome"
+[ -n "$MACHINE_HOST" ] && START_SCREEN="Connection Validate"
+
+cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL" -s "$START_SCREEN"
 {
     "version": "1.0.0",
     "dialog": {
+        $PROGRAM
         "colors": true,
         "backtitle": "Pi In The Sky - Setup Wizard"
     },
@@ -183,7 +191,9 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
         "Welcome": {
             "type": "msgbox",
             "properties": {
-                "text": "\\nWelcome to the \\\ZbPi in the Sky\\\ZB Setup Wizard.\\nLet's get started."
+                "width": 48,
+                "height": 6,
+                "text": "Welcome to the \\\ZbPi in the Sky\\\ZB Setup Wizard.\\nLet's get started."
             },
             "next": "Main Menu"
         },
@@ -964,7 +974,7 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
             "type": "input",
             "capture_into": "machine_host",
             "properties": {
-                "text": "Enter SSH host details:\\nie \\\Zbpi@hostname\\\ZB"
+                "text": "Enter SSH host details:\\nie: \\\Zbpi@hostname\\\ZB"
             },
             "next": "Connection Validate"
         },
@@ -983,6 +993,7 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
         },
         "Connection Validate Result": {
             "type": "custom",
+            "capture_into": "valid_connection",
             "dialog": {
                 "title": "Connection Test [\\\Zb\\\Z2+\\\Zn]"
             },
@@ -991,7 +1002,10 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
                 "height": 7
             },
             "entrypoint": "pits::setup::connection::result",
-            "next": "Command Settings"
+            "next": "Main Menu",
+            "handlers": {
+                "capture_into": "wheel::handlers::flag"
+            }
         },
         "Error": {
             "type": "msgbox",
@@ -1012,6 +1026,8 @@ cat << EOF | dialog-wheel -d defaults.json -l pitsctl.log -L "$LOG_LEVEL"
                 "clear": true
             },
             "properties": {
+                "width": 48,
+                "height": 6,
                 "text": "Are you sure you want to exit?"
             }
         }

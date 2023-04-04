@@ -54,4 +54,11 @@ function pits::setup::connection::validate() {
     return 254
 }
 
+function pits::setup::connection::finish() {
+    local key=$1
+    [ "$key" = 'valid_connection' ] &&
+    json_source=$(wheel::json::set "$json_source" 'dialog.backtitle' "Pi In the Sky - Setup Wizard [Connected to $(wheel::state::get "machine_host")]")
+}
+
 wheel::events::add_clean_up "rm -f $PITS_ENV"
+wheel::events::add_state_change "pits::setup::connection::finish"
