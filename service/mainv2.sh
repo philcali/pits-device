@@ -44,10 +44,10 @@ install_dialog_wheel() {
     local paths
     IFS=':' read -r -a paths <<< "$PATH"
     for path in "${paths[@]}"
-    do  
+    do
         mv dialog-wheel "$path/" && echo "Installed dialog-wheel in $path" && break
     done
-    popd && rmdir dialog-wheel
+    popd && rm -rf dialog-wheel
 }
 
 usage() {
