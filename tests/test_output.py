@@ -3,7 +3,7 @@ import time
 from pinthesky.output import Output
 from pinthesky.events import EventThread, event_names
 from pinthesky.input import INotifyThread
-from tests.test_handler import TestHandler
+from test_handler import TestHandler
 
 
 def test_output():

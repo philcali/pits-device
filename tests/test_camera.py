@@ -4,7 +4,7 @@ import pinthesky
 from pinthesky.config import ConfigUpdate
 from pinthesky.events import EventThread
 from pinthesky.camera import CameraThread
-from tests.test_handler import TestHandler
+from test_handler import TestHandler
 
 
 def test_configuration_change():

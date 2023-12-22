@@ -6,7 +6,7 @@ from pinthesky.config import ConfigUpdate
 from pinthesky.events import EventThread
 from pinthesky.health import DeviceHealth
 from pinthesky.output import Output
-from tests.test_handler import TestHandler
+from test_handler import TestHandler
 
 
 def test_device_health():

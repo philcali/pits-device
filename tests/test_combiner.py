@@ -3,7 +3,7 @@ import os
 import time
 from pinthesky.combiner import VideoCombiner
 from pinthesky.events import EventThread
-from tests.test_handler import TestHandler
+from test_handler import TestHandler
 
 
 def test_combiner():
