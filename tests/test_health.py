@@ -61,10 +61,15 @@ def test_device_health_flush():
             'ip_addr',
             'mem_total',
             'mem_avail',
-            'mem_free'
+            'mem_free',
+            'os_id',
+            'os_version',
+            'python_version',
         ]
         for field in validate_existence:
             assert field in content
+            if field == 'os_version' or field == 'os_id':
+                assert content[field] != 'unknown'
     finally:
         events.stop()
         os.remove(output_file)
