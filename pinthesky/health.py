@@ -4,6 +4,7 @@ import os
 import psutil
 import shutil
 import socket
+import sys
 from datetime import datetime, timedelta
 from math import floor
 from threading import Lock
@@ -76,6 +77,26 @@ class DeviceHostRunningTime(DeviceHealthMetric):
         }
 
 
+class DeviceOperatingSystem(DeviceHealthMetric):
+    def __init__(self, release='/etc/os-release') -> None:
+        self.release = []
+        try:
+            with open(release, 'r') as f:
+                self.release = f.readlines()
+        except Exception as e:
+            logger.error(f'Failed to read OS release info: ${e}')
+
+    def report(self):
+        allowed_keys = set(['VERSION', 'ID'])
+        reported = {'os_version': 'unknown', 'os_id': 'unknown'}
+        for line in self.release:
+            [key, value] = line.split('=', 1)
+            reported_key = f'os_{key.lower()}'
+            if key in allowed_keys and reported_key in reported:
+                reported[reported_key] = value.replace('"', '')
+        return reported
+
+
 class DeviceHealth(Handler, ShadowConfigHandler):
     def __init__(
             self,
@@ -86,7 +107,8 @@ class DeviceHealth(Handler, ShadowConfigHandler):
                 DeviceMemoryMetric(),
                 DeviceDiskMetric(),
                 DeviceCpuMetric(),
-                DeviceHostAddress()
+                DeviceHostAddress(),
+                DeviceOperatingSystem(),
             ]) -> None:
         self.events = events
         self.metrics = metrics
@@ -117,8 +139,10 @@ class DeviceHealth(Handler, ShadowConfigHandler):
         self.recording_status = event["recording"]
 
     def __flush_metrics(self):
+        p_vs = sys.version_info
         context = {
             'version': VERSION,
+            'python_version': f'{p_vs.major}.{p_vs.minor}.{p_vs.micro}',
             'motion_captured': self.motion_captured,
             'recording_status': self.recording_status,
         }

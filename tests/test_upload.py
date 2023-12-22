@@ -6,7 +6,7 @@ from unittest.mock import patch
 from pinthesky.upload import S3Upload
 from pinthesky.events import EventThread
 from pinthesky.session import Session
-from tests.test_handler import TestHandler
+from test_handler import TestHandler
 
 
 @patch('boto3.Session')

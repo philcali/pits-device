@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from pinthesky.config import ConfigUpdate, ShadowConfig, ShadowConfigHandler
 from pinthesky.events import EventThread
-from tests.test_handler import TestHandler
+from test_handler import TestHandler
 
 Parser = namedtuple('Parser', ['shadow_update'])
 
