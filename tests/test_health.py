@@ -4,7 +4,7 @@ import os
 from pinthesky import VERSION
 from pinthesky.config import ConfigUpdate
 from pinthesky.events import EventThread
-from pinthesky.health import DeviceHealth
+from pinthesky.health import DeviceHealth, DeviceOperatingSystem
 from pinthesky.output import Output
 from test_handler import TestHandler
 
@@ -108,3 +108,10 @@ def test_update_document():
     assert device_health.update_document() == ConfigUpdate('health', {
         'interval': 3600
     })
+
+
+def test_unknown_os():
+    os_metric = DeviceOperatingSystem(release='/etc/non-existent')
+    reported = os_metric.report()
+    for key, value in reported.items():
+        assert value == 'unknown'
