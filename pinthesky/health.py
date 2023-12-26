@@ -90,7 +90,7 @@ class DeviceOperatingSystem(DeviceHealthMetric):
         allowed_keys = set(['VERSION', 'ID'])
         reported = {'os_version': 'unknown', 'os_id': 'unknown'}
         for line in self.release:
-            [key, value] = line.split('=', 1)
+            [key, value] = line.rsplit().split('=', 1)
             reported_key = f'os_{key.lower()}'
             if key in allowed_keys and reported_key in reported:
                 reported[reported_key] = value.replace('"', '')
