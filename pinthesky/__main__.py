@@ -220,6 +220,9 @@ def main():
     camera_thread.start()
     notify_thread.start()
 
+    # Trigger an initial health metric on process start
+    device_health.emit_health(force=True)
+
     def signal_handler(signum, frame):
         notify_thread.stop()
         camera_thread.stop()
