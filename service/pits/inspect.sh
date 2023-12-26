@@ -6,6 +6,10 @@ INSPECTION_LOG="pits.inspection.log"
 function pits::setup::inspect::software() {
     local version
     pits::setup::truncate "$INSPECTION_LOG" "$PITS_ENV" || return 254
+    echo "Validating basic dependencies"
+    pits::setup::invoke which pip3 || {
+        echo "[-] pip is not installed" >> "$INSPECTION_LOG"
+    }
     echo "Validating software installation for device"
     version=$(pits::setup::invoke pinthesky --version) || {
         echo "[-] Pinthesky is not installed" >> "$INSPECTION_LOG"
@@ -14,6 +18,7 @@ function pits::setup::inspect::software() {
         echo "Found version $version"
         echo "[+] Pinthesky is installed: $version" >> "$INSPECTION_LOG"
     }
+    return 0
 }
 
 function pits::setup::inspect::configuration() {
