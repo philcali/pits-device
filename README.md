@@ -28,6 +28,15 @@ mkdir -p $HOME/bin \
     && pitsctl -h
 ```
 
+## Important Note
+
+The current `pinthesky` application is still using the legacy camera module and is only compatible with:
+
+- raspbian OS < 12 (bookworm)
+- ArduCam 1.1 and 1.2 (< 1.3)
+
+Until https://github.com/philcali/pits-device/issues/46 is fixed, you must stick to the legacy OS and camera modules.
+
 ## Architecture
 
 ![pinthesky.png](https://raw.githubusercontent.com/philcali/pits-device/main/images/pinthesky.png)

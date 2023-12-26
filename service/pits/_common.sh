@@ -22,7 +22,9 @@ function pits::setup::cp() {
         [ -d "$1" ] && scp_cmd+=("-r")
         scp_cmd+=("$1" "$machine:~/")
         "${scp_cmd[@]}"
-        pits::setup::invoke mv "$1" "$2"
+        if [ -n "$2" ]; then
+            pits::setup::invoke mv "$1" "$2"
+        fi
     fi
 }
 

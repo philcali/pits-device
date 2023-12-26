@@ -66,6 +66,7 @@ function pits::setup::install::device_client::software() {
     fi
     [ -f "$PITS_ENV" ] && source "$PITS_ENV"
     cat << EOF > install_device_client.sh
+#!/usr/bin/env bash
 echo "Installing Dependencies"
 apt-get update -q
 apt-get install -yq \
@@ -96,7 +97,7 @@ cp aws-iot-device-client/sample-job-handlers/*.sh "$JOBS_DIR/"
 rm -rf aws-iot-device-client
 EOF
     chmod +x install_device_client.sh
-    pits::setup::cp install_device_client.sh ~/
+    pits::setup::cp install_device_client.sh
     pits::setup::invoke ./install_device_client.sh
     echo "[+] Installed AWS IoT Device Client Software" >> "$INSTALL_LOG"
 }
@@ -210,6 +211,9 @@ EOF
 
 function pits::setup::install::pinthesky_software() {
     {
+        if ! pits::setup::invoke which pip3 > /dev/null; then
+            pits::setup::invoke apt-get -yq install python3-pip > /dev/null && echo "[+] Installed pip"
+        fi
         if ! pits::setup::invoke which pinthesky > /dev/null; then
             if pits::setup::invoke pip3 install pinthesky > /dev/null; then
                 echo "[+] Installed pinthesky"
