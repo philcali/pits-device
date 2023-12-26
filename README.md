@@ -130,7 +130,7 @@ The `pitsctl` entry point can handle three targets:
 - `view`: Inpects the installation on the device
 
 ```
-Usage: pitsctl - v0.6.0: Install or manage pinthesky software
+Usage: pitsctl - v0.6.1: Install or manage pinthesky software
   -h,--help:    Prints out this help message
   -m,--host:    Client machine connection details
   -r,--root:    Assume root permission for management
