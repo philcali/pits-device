@@ -38,6 +38,13 @@ class Handler():
         """
         pass
 
+    def on_capture_video(self, event):
+        """
+        Handle the event signaling the user's intent to capture a video feed.
+        Event fields are `duration` (optional... will use buffer)
+        """
+        pass
+
     def on_capture_image(self, event):
         """
         Handle the call capture event image.

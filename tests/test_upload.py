@@ -45,7 +45,7 @@ def test_upload(bsession):
         data_file = f'{field}.data'
         with open(data_file, 'w') as f:
             f.write("hello")
-        context = {'start_time': floor(time())}
+        context = {'start_time': floor(time()), 'trigger': 'motion'}
         context[field] = data_file
         events.fire_event(event_name, context)
     while events.event_queue.unfinished_tasks > 0:

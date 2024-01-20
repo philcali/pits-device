@@ -128,6 +128,41 @@ def test_camera_run():
     finally:
         camera.stop()
 
+def test_camera_capture_video():
+    pinthesky.set_stream_logger()
+    camera_class = mock.MagicMock()
+    stream_class = mock.MagicMock()
+    motion_class = mock.MagicMock()
+    stream_object = mock.MagicMock()
+    stream_class.return_value = stream_object
+    test_handler = TestHandler()
+    events = EventThread()
+    camera = CameraThread(
+        events=events,
+        camera_class=camera_class,
+        stream_class=stream_class,
+        motion_detection_class=motion_class,
+        sensitivity=10,
+        resolution=(640, 480),
+        framerate=20,
+        rotation=270,
+        buffer=0.01,
+        buffer_size=10000,
+        recording_window="0-23"
+    )
+    events.on(camera)
+    events.on(test_handler)
+    events.start()
+    try:
+        camera.start()
+        events.fire_event('capture_video', {'duration': 0.01})
+        # Marginal sleep induced by flush buffer
+        sleep(0.1)
+        assert test_handler.calls['flush_end'] == 1
+        stream_object.clear.assert_called_once()
+    finally:
+        camera.stop()
+
 
 def test_configuration_update():
     camera_class = mock.MagicMock()

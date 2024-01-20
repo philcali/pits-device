@@ -25,7 +25,7 @@ class S3Upload(Handler):
         self.session = session
         self.bucket_image_prefix = bucket_image_prefix
 
-    def __upload_to_bucket(self, prefix, file_obj, source):
+    def __upload_to_bucket(self, prefix, file_obj, source, extra_args=None):
         creds = self.session.login()
         if self.bucket_name is not None and creds is not None:
             video = os.path.basename(file_obj)
@@ -38,7 +38,7 @@ class S3Upload(Handler):
             try:
                 s3 = session.client('s3')
                 with open(file_obj, 'rb') as f:
-                    s3.upload_fileobj(f, self.bucket_name, loc)
+                    s3.upload_fileobj(f, self.bucket_name, loc, ExtraArgs=extra_args)
                     logger.info(f'Uploaded to s3://{self.bucket_name}/{loc}')
                 self.events.fire_event('upload_end', {
                     'start_time': source['start_time'],
@@ -66,4 +66,9 @@ class S3Upload(Handler):
         self.__upload_to_bucket(
             self.bucket_prefix,
             event['combine_video'],
-            event)
+            event,
+            extra_args={
+                'Metadata': {
+                    'trigger': event['trigger']
+                }
+            })
