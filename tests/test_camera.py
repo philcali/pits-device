@@ -128,6 +128,7 @@ def test_camera_run():
     finally:
         camera.stop()
 
+
 def test_camera_capture_video():
     pinthesky.set_stream_logger()
     camera_class = mock.MagicMock()
