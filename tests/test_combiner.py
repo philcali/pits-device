@@ -20,7 +20,8 @@ def test_combiner():
     with open(f'{start_time}.after.h264', 'w') as f:
         f.write("World!")
     events.fire_event("flush_end", {
-        'start_time': start_time
+        'start_time': start_time,
+        'trigger': 'motion',
     })
     while not hasattr(handler, 'calls') or "combine_end" not in handler.calls:
         pass

@@ -34,6 +34,7 @@ class VideoCombiner(Handler):
                 os.remove(part_name)
         self.events.fire_event('combine_end', {
             'start_time': event['start_time'],
-            'combine_video': file_name
+            'combine_video': file_name,
+            'trigger': event['trigger'],
         })
         logger.info(f'Finish concatinating to {file_name}')

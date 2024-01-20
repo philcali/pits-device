@@ -16,6 +16,7 @@ event_names = [
     'file_change',
     'capture_image',
     'capture_image_end',
+    'capture_video',
     'recording_change',
     'health',
     'health_end'

@@ -40,6 +40,9 @@ class TestHandler(Handler):
     def on_health_end(self, event):
         self.__on_event('health_end', event)
 
+    def on_capture_video(self, event):
+        self.__on_event('capture_video', event)
+
 
 def test_handler():
     handler = TestHandler()

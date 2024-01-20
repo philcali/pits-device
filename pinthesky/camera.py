@@ -33,6 +33,8 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         self.running = True
         self.flushing_stream = False
         self.flushing_ts = None
+        self.flushing_buffer = None
+        self.flushing_trigger = None
         self.buffer_size = buffer_size
         self.events = events
         self.buffer = buffer
@@ -93,12 +95,25 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             'start_time': event['timestamp']
         })
 
-    def on_motion_start(self, event):
+    def __flush_start(self, trigger, event):
         if not self.flushing_stream:
             logger.info(
-                f'Starting a flush on motion event from {event["timestamp"]}')
+                f'Starting a flush on {trigger} video from {event["timestamp"]}')
             self.flushing_ts = event['timestamp']
+            self.flushing_buffer = self.buffer
+            if 'duration' in event:
+                self.flushing_buffer = event['duration']
             self.flushing_stream = True
+            self.flushing_trigger = trigger
+
+    def on_motion_start(self, event):
+        self.__flush_start('motion', event)
+
+    def on_capture_video(self, event):
+        # Make sure to lock on other configuration changes before mutating camera state
+        with self.configuration_lock:
+            self.resume()
+            self.__flush_start('manual', event)
 
     def update_document(self) -> ConfigUpdate:
         return ConfigUpdate('camera', {
@@ -168,10 +183,11 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.historical_stream.copy_to(f'{self.flushing_ts}.before.h264')
             self.historical_stream.clear()
             logger.info("Flushed buffered contents")
-            time.sleep(self.buffer)
+            time.sleep(self.flushing_buffer)
             self.camera.split_recording(self.historical_stream)
             self.events.fire_event('flush_end', {
-                'start_time': self.flushing_ts
+                'start_time': self.flushing_ts,
+                'trigger': self.flushing_trigger
             })
             self.flushing_stream = False
 
