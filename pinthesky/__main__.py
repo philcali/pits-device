@@ -17,6 +17,11 @@ def create_parser():
     parser = argparse.ArgumentParser(
         description="Simple camera stream that captures motion video events")
     parser.add_argument(
+        "--log-level",
+        help="configured log level of the pinthesky app, default INFO",
+        required=False,
+        default='INFO')
+    parser.add_argument(
         "--version",
         help="displays the current version",
         action='store_true')
@@ -157,8 +162,7 @@ def main():
     if parsed.version:
         print(VERSION)
         exit(0)
-    # TODO: make this externally configurable
-    set_stream_logger("pinthesky", level=logging.INFO)
+    set_stream_logger("pinthesky", level=logging.getLevelName(parsed.log_level))
     event_thread = EventThread()
     device_health = DeviceHealth(
         events=event_thread,

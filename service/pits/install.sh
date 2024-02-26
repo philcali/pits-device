@@ -51,9 +51,12 @@ function pits::setup::install::pinthesky_config() {
         echo "Manifested ${name^^}: $path"
         echo "${name^^}=$path" >> "$PITS_ENV"
     done
-    echo "HEALTH_INTERVAL=$(wheel::state::get "device.health_interval")" >> "$PITS_ENV"
-    # TODO: make a form for this
-    echo "SHADOW_UPDATE=empty" >> "$PITS_ENV"
+    {
+        echo "HEALTH_INTERVAL=$(wheel::state::get "device.health_interval")"
+        echo "LOG_LEVEL=$(wheel::state::get "device.log_level")"
+        # TODO: make a form for this
+        echo "SHADOW_UPDATE=empty"
+    } >> "$PITS_ENV"
     pits::setup::invoke mkdir -p /etc/pinthesky
     pits::setup::cp "$PITS_ENV" /etc/pinthesky/pinthesky.env
     echo "[+] Installed pinthesky.env" >> "$INSTALL_LOG"
@@ -534,6 +537,7 @@ Alias=pinthesky.service
 [Service]
 EnvironmentFile=/etc/pinthesky/pinthesky.env
 ExecStart=/usr/local/bin/pinthesky \
+    --log-level \$LOG_LEVEL\
     --buffer \$BUFFER \
     --sensitivity \$SENSITIVITY \
     --combine-dir \$COMBINE_DIR \
