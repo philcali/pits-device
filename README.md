@@ -133,7 +133,9 @@ The `pitsctl` entry point can handle three targets:
 Usage: pitsctl - v0.6.1: Install or manage pinthesky software
   -h,--help:    Prints out this help message
   -m,--host:    Client machine connection details
+  -t,--text:    Enable a no color, text only view of the application
   -r,--root:    Assume root permission for management
+  -l,--level:   Changes the logging verbosity for pitsctl
   -v,--version: Prints the version and exists
 ```
 

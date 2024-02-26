@@ -5,7 +5,7 @@ RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
 ASSUME_ROOT="false"
 MACHINE_HOST=""
 PROGRAM=""
-LOG_LEVEL="INFO"
+LOG="INFO"
 
 download_resource() {
     local RESOURCE_FILE=$1
@@ -36,6 +36,7 @@ import_function() {
     echo "$script_file"
 }
 
+# TODO: improve this for updating and installing
 install_dialog_wheel() {
     git clone https://github.com/philcali/dialog-wheel.git
     pushd dialog-wheel || return 1
@@ -56,6 +57,7 @@ usage() {
     echo "  -m,--host:    Client machine connection details"
     echo "  -t,--text:    Enable a no color, text only view of the application"
     echo "  -r,--root:    Assume root permission for management"
+    echo "  -l,--level:   Changes the logging verbosity for $(basename "$0")"
     echo "  -v,--version: Prints the version and exists"
 }
 
@@ -66,13 +68,13 @@ parse_args() {
         -r|--root)
             ASSUME_ROOT="true";;
         -t|--text)
-            PROGRAM='"program": "wheel::dialog::app",';;
+            PROGRAM='program: wheel::dialog::app';;
         -m|--host)
             shift
             MACHINE_HOST=$1;;
         -l|--level)
             shift
-            LOG_LEVEL=$1;;
+            LOG=$1;;
         -v|--version)
             echo "$VERSION" && return 1;;
         -h|--help)
@@ -115,6 +117,7 @@ device:
     combine_dir: "/usr/share/pinthesky/motion_videos"
     capture_dir: "/usr/share/pinthesky/capture_images"
   health_interval: 3600
+  log_level: "INFO"
 camera:
   sensitivity: 10
   framerate: 20
@@ -145,7 +148,7 @@ install_script=$(import_function "$0" "install.sh")
 START_SCREEN="Welcome"
 [ -n "$MACHINE_HOST" ] && START_SCREEN="Connection Validate"
 
-cat << EOF | dialog-wheel --yaml -d defaults.yaml -l pitsctl.log -L "$LOG_LEVEL" -s "$START_SCREEN"
+cat << EOF | dialog-wheel --yaml -d defaults.yaml -l pitsctl.log -L "$LOG" -s "$START_SCREEN"
 dialog:
   $PROGRAM
   backtitle: Pi In The Sky - Setup Wizard
@@ -382,6 +385,8 @@ screens:
         name: Configuration Paths
       - description: Rate in seconds for post health checks
         name: Health Check Interval
+      - description: Logging severity on the device 
+        name: Log Level
     type: hub
   Device Software:
     capture_into: software.install
@@ -396,6 +401,24 @@ screens:
       - description: Do not attempt an installation
         name: Nothing
       text: 'Select behavior:'
+    type: radiolist
+  Log Level:
+    capture_into: device.log_level
+    handlers:
+      ok: wheel::handlers::cancel
+    properties:
+      text: "Logging severity"
+      items:
+      - description: Logs fatal messages only
+        name: FATAL
+      - description: Logs error messages in addition to above
+        name: ERROR
+      - description: Logs warning messages in addition to above
+        name: WARN
+      - description: Logs information messages in addition to above
+        name: INFO
+      - description: Logs debugging messages in addition to above
+        name: DEBUG
     type: radiolist
   Encoding:
     capture_into: camera.encoding
