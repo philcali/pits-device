@@ -87,6 +87,9 @@ parse_args() {
 parse_args "$@" || exit 0
 
 cat << EOF > defaults.yaml
+previous:
+  installed: false
+  overwrite: true
 cloud:
   thing_name: "PinTheSkyThing"
   thing_group: "PinTheSkyGroup"
@@ -243,7 +246,7 @@ screens:
         name: Encoding
     type: hub
   Cloud Configuration:
-    back: Install
+    back: Install Menu
     clear_history: true
     dialog:
       cancel-label: Back
@@ -326,6 +329,7 @@ screens:
       actions:
       - pits::setup::connection::validate
       width: 70
+    managed: false
     type: gauge
   Connection Validate Result:
     capture_into: valid_connection
@@ -485,6 +489,36 @@ screens:
       width: 70
     type: range
   Install:
+    condition:
+      "!not":
+      - "!ref": previous.installed
+    dialog:
+      title: Checking Previous Install
+    type: gauge
+    managed: false
+    properties:
+      actions:
+      - pits::setup::install::load_previous
+      width: 70
+      height: 7
+    next: Install Menu
+  Overwrite Configuration:
+    properties:
+      width: 70
+      height: 7
+      text: 'Overwrite existing installation configuration?
+
+        Current Value: [\Zb\$state.previous.overwrite\ZB]'
+    type: yesno
+    capture_into: previous.overwrite
+    handlers:
+      ok: wheel::handlers::cancel
+      capture_into: wheel::handlers::flag
+      cancel:
+      - wheel::handlers::flag
+      - wheel::handlers::cancel
+    next: Install Menu
+  Install Menu:
     back: Main Menu
     clear_history: true
     dialog:
@@ -498,16 +532,24 @@ screens:
     next: Review and Install
     properties:
       items:
+      - description: Overwrite existing configuration
+        depends: previous.installed
+        configures: previous.overwrite
+        name: Overwrite Configuration
       - description: Creates and configures AWS resources
         name: Cloud Configuration
+        depends: previous.overwrite
       - description: Manages remote storage of images and videos
         name: Storage Configuration
+        depends: previous.overwrite
       - description: Installs pinthesky software
         name: Device Software
       - description: Installs and configures pinthesky
         name: Device Configuration
+        depends: previous.overwrite
       - description: Configures camera settings
         name: Camera Configuration
+        depends: previous.overwrite
       - description: Installs and configures AWS IoT device client
         name: Device Client
       - description: Installs and configures systemd services
