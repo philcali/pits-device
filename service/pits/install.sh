@@ -10,19 +10,96 @@ PRV_KEY_FILE="thing.key"
 PUB_KEY_FILE="thing.pub"
 CA_CERT="AmazonRootCA1.pem"
 
+read -r -d '' UPDATE_DAEMON <<-END
+#!/bin/bash
+
+USER=\$1
+shift 1
+VERSION=\${1:-""}
+
+echo "Upgrading pinthesky software"
+if [ -z "\$VERSION" ] || [ "\$VERSION" = "\\\$version" ]; then
+    sudo -u "\$USER" -n python3 -m pip install --upgrade pinthesky
+else
+    sudo -u "\$USER" -n python3 -m pip uninstall -y pinthesky
+    sudo -u "\$USER" -n python3 -m pip install "pinthesky\$VERSION"
+fi
+END
+
+read -r -d '' READ_SERVICE_LOGS <<-END
+#!/bin/bash
+
+USER=\$1
+shift 1
+SERVICE=\${1:-"pinthesky"}
+LINES=\${2:-20}
+PATTERN=\${3:-""}
+SINCE=\${4:-""}
+UNTIL=\${5:-""}
+
+[ "\$LINES" = '\$lines' ] && LINES=20
+
+CMD=( "-u" "\$SERVICE" "-n" "\$LINES" )
+
+([ "\$PATTERN" != '\$pattern' ] && [ -n "\$PATTERN" ]) && CMD+=( "-g" "\$PATTERN" )
+([ "\$SINCE" != '\$since' ] && [ -n "\$SINCE" ]) && CMD+=( "-s" "\$SINCE" )
+([ "\$UNTIL" != '\$until' ] && [ -n "\$UNTIL" ]) && CMD+=( "-U" "\$UNTIL" )
+
+sudo -u "\$USER" -n journalctl -r \${CMD[@]} 
+END
+
+function pits::setup::install::load_previous() {
+    echo "XXX"
+    echo "20"
+    echo "Checking previous installation"
+    echo "XXX"
+    if pits::setup::invoke [ -f /etc/pinthesky/pinthesky.env ]; then
+        echo "XXX"
+        echo "40"
+        echo "Pulling previous configuration"
+        echo "XXX"
+        pits::setup::invoke cat /etc/pinthesky/pinthesky.env > "$PITS_ENV"
+        echo "XXX"
+        echo "60"
+        echo "Finding previous version"
+        echo "XXX"
+        version=$(pits::setup::invoke pinthesky --version) || version=""
+        echo "XXX"
+        echo "80"
+        echo "Setting previous configuration for $version"
+        echo "XXX"
+        if [ -n "$version" ]; then
+            wheel::state::set "software.install" "Nothing"
+            wheel::state::set "client.install_software" "false" argjson
+            wheel::state::set "client.install_service" "false" argjson
+            wheel::state::set "client.install_configuration" "false" argjson
+            wheel::state::set "previous.version" "$version"
+            wheel::state::set "previous.installed" "true" argjson
+            wheel::state::set "previous.overwrite" "false" argjson
+            wheel::state::write_ipc
+        fi
+    fi
+    echo "XXX"
+    echo "100"
+    echo "Finalizing installation inspection"
+    echo "XXX"
+}
 
 function pits::setup::install::device() {
     pits::setup::truncate "$INSTALL_LOG" || return 254
-    pits::setup::truncate "$PITS_ENV" || return 254
     local task_index
     local entry
     local name
     local install_tasks=()
     [ "$(wheel::state::get "software.install")" != "Nothing" ] && install_tasks+=(pinthesky_software)
-    install_tasks+=(pinthesky_camera)
-    install_tasks+=(pinthesky_storage)
-    install_tasks+=(pinthesky_cloud)
-    install_tasks+=(pinthesky_config)
+    if [ "$(wheel::state::get "previous.overwrite")" = "true" ]; then
+        # Allow rewriting the config
+        pits::setup::truncate "$PITS_ENV" || return 254
+        install_tasks+=(pinthesky_camera)
+        install_tasks+=(pinthesky_storage)
+        install_tasks+=(pinthesky_cloud)
+        install_tasks+=(pinthesky_config)
+    fi
     for entry in $(wheel::state::get "client | to_entries | .[]" -c); do
         name=$(wheel::json::get "$entry" 'key')
         [ "$(wheel::json::get "$entry" 'value')" = 'false' ] && continue
@@ -172,23 +249,11 @@ EOF
 
 function pits::setup::install::device_client::job_handlers() {
     [ -f "$PITS_ENV" ] && source "$PITS_ENV"
-    cat << EOF > upgrade-pinthesky.sh
-#!/bin/bash
-
-USER=\$1
-shift 1
-VERSION=\${1:-""}
-
-echo "Upgrading pinthesky software"
-if [ -z "\$VERSION" ] || [ "\$VERSION" = "\\\$version" ]; then
-    python3 -m pip install --upgrade pinthesky
-else
-    python3 -m pip uninstall -y pinthesky
-    python3 -m pip install "pinthesky\$VERSION"
-fi
-EOF
+    echo "$UPDATE_DAEMON" > upgrade-pinthesky.sh
+    echo "$READ_SERVICE_LOGS" > read-service-logs.sh
     pits::setup::invoke mkdir -p "$JOBS_DIR"
     pits::setup::cp upgrade-pinthesky.sh "$JOBS_DIR/"
+    pits::setup::cp read-service-logs.sh "$JOBS_DIR/"
     pits::setup::invoke chmod 700 "$JOBS_DIR/*.sh"
     echo "[+] Installed AWS IoT Device Client Job Handlers" >> "$INSTALL_LOG"
 }
@@ -587,6 +652,7 @@ wheel::events::add_clean_up "rm -f install_device_client.sh"
 wheel::events::add_clean_up "rm -f default.policy.json"
 wheel::events::add_clean_up "rm -f default.iam.policy.json"
 wheel::events::add_clean_up "rm -f upgrade-pinthesky.sh"
+wheel::events::add_clean_up "rm -f read-service-logs.sh"
 wheel::events::add_clean_up "rm -f pinthesky.service"
 wheel::events::add_clean_up "rm -f aws-iot-device-client.conf"
 wheel::events::add_clean_up "rm -f aws-iot-device-client.service"
