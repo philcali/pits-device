@@ -11,7 +11,7 @@ from pinthesky.config import ConfigUpdate
 
 
 class CaptureHandler(logging.Handler):
-    def __init__(self, level: int | str = 0) -> None:
+    def __init__(self, level) -> None:
         super().__init__(level)
         self.records = []
 
@@ -55,6 +55,7 @@ def test_cloudwatch_event_filter():
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.addHandler(handler)
+    logger.addHandler(logging.NullHandler())
     logger.info("This is a message")
     logger.info("This is an event message", extra={
         'emf': emf
