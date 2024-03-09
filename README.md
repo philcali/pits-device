@@ -41,11 +41,12 @@ Until https://github.com/philcali/pits-device/issues/46 is fixed, you must stick
 
 ![pinthesky.png](https://raw.githubusercontent.com/philcali/pits-device/main/images/pinthesky.png)
 
-The `pinthesky` daemon is very light-weight. The entirety of the application runs on 3 threads:
+The `pinthesky` daemon is very light-weight. The entirety of the application runs on 3 threads (optionally 4 with cloudwatch):
 
 - Single thread to manage the camera
 - Single thread to poll an event queue
 - Single thread to poll inotify
+- (Optional) Single thread to upload logs to CloudWatch
 
 The camera thread detects motion vectors in the recording. The buffer is flushed and an event is
 signaled to combine the buffered video with the live stream. The `h264` file triggers an event
@@ -117,6 +118,33 @@ location. These values are configured with:
                         motion_videos
 ```
 
+An entirely optional integration exists with CloudWatch, where device
+logs and metrics are uploaded to a desired `LogGroup`. The integration
+works in conjuction with a connection to AWS. By turning on the
+integration with `--cloudwatch` specify the `LogGroup` with:
+`--cloudwatch-log-group <GroupName>`. It will, by default, flush
+logs to CloudWatch serially. To background buffer these entries, use
+the `--cloudwatch-thread` which reserves a thread for flushing the
+log events. By default, the application will use `logs` for
+`--cloudwatch-event-type` which matches how logs are normally written
+for the daemon. To enable EMF style metrics, use 
+`--cloudwatch-event-type emf`. The daemon will manage the `LogStream`
+associated to the `LogGroup`, by "{year}/{month}/{day}". It will
+delineate the stream by `thing_name`. To disable this behavior, use
+`--disable-cloudwatch-stream-split`.
+
+```
+  --cloudwatch          enable the cloudwatch upload, default false
+  --cloudwatch-thread   enable cloudwatch logs to upload in background, default false
+  --cloudwatch-event-type CLOUDWATCH_EVENT_TYPE
+                        event type to upload: logs,emf,all
+  --cloudwatch-metric-namespace CLOUDWATCH_METRIC_NAMESPACE
+                        metric namespace when using emf event type, default Pits/Device
+  --cloudwatch-log-group CLOUDWATCH_LOG_GROUP
+                        uploads to this cloudwatch log group
+  --disable-cloudwatch-stream-split
+                        disbles spliting the log stream by thing name
+```
 
 __Note__: These can be configured correctly for you if you follow the guided `pitsctl` installation
 wizard.

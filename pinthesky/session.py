@@ -98,9 +98,11 @@ class Session(Handler, ShadowConfigHandler):
                     logger.error(
                         "Failed to refresh AWS credentials from %s: %s",
                         self.credentials_endpoint,
-                        err)
-                except exceptions.RequestException:
+                        err,
+                        exc_info=err)
+                except exceptions.RequestException as err:
                     logger.error(
                         "Failed to refresh AWS credentials from %s",
-                        self.credentials_endpoint)
+                        self.credentials_endpoint,
+                        exc_info=err)
         return self.credentials

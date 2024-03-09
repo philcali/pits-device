@@ -89,7 +89,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         if 'file_name' in event:
             result = f'{self.capture_dir}/{event["file_name"]}'
         self.camera.capture(result, use_video_port=True)
-        logger.info(f'Capture to {result}')
+        logger.debug(f'Capture to {result}')
         self.events.fire_event('capture_image_end', {
             'image_file': result,
             'start_time': event['timestamp']
@@ -182,7 +182,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.camera.split_recording(f'{self.flushing_ts}.after.h264')
             self.historical_stream.copy_to(f'{self.flushing_ts}.before.h264')
             self.historical_stream.clear()
-            logger.info("Flushed buffered contents")
+            logger.debug("Flushed buffered contents")
             time.sleep(self.flushing_buffer)
             self.camera.split_recording(self.historical_stream)
             self.events.fire_event('flush_end', {

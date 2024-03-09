@@ -85,5 +85,4 @@ class InputHandler(Handler):
         if "name" in event['content'] and "context" in event['content']:
             content = event['content']
             logger.info(f'Control event received from service {content["name"]}')
-            logger.debug(f'Event content is: {content["context"]}')
             self.events.fire_event(content['name'], content['context'])

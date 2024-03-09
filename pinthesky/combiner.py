@@ -37,4 +37,4 @@ class VideoCombiner(Handler):
             'combine_video': file_name,
             'trigger': event['trigger'],
         })
-        logger.info(f'Finish concatinating to {file_name}')
+        logger.debug(f'Finish concatinating to {file_name}')

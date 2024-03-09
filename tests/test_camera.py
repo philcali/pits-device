@@ -48,8 +48,7 @@ def test_configuration_change():
             }
         }
     })
-    while events.event_queue.unfinished_tasks > 0:
-        pass
+    events.event_queue.join()
     assert camera.recording_window == '12-20'
     assert camera.buffer == 20
     assert camera.sensitivity == 20
@@ -88,7 +87,7 @@ def test_capture_image():
     events.fire_event('capture_image', {
         'file_name': 'test_image.jpg',
     })
-    while not hasattr(test_handler, 'calls'):
+    while events.event_queue.unfinished_tasks > 0:
         pass
     assert test_handler.calls['capture_image_end'] == 1
 

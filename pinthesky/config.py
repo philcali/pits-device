@@ -84,3 +84,23 @@ class ShadowConfig(Handler):
                 # TODO: probably want to lock on it
                 with open(self.__configure_input, 'w') as f:
                     f.write("")
+        elif event['file_name'] == self.__configure_input:
+            logger.info(
+                f'Config update received on {event["timestamp"]}',
+                extra={
+                    'emf': {
+                        'CloudWatchMetrics': [
+                            {
+                                'Dimensions': ['ThingName', 'Operation'],
+                                'Metrics': [
+                                    {
+                                        'Name': 'Shadow',
+                                        'Unit': 'Count'
+                                    }
+                                ]
+                            }
+                        ],
+                        'Shadow': 1,
+                        'Operation': 'ConfigUpdate',
+                    }
+                })

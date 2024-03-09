@@ -51,8 +51,7 @@ def test_handler():
     events.start()
     for event_name in event_names:
         events.fire_event(event_name)
-    while not events.event_queue.empty():
-        pass
+    events.event_queue.join()
     for event_name in event_names:
         assert handler.calls[event_name] == 1
     events.stop()
