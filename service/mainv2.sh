@@ -110,6 +110,13 @@ client:
   install_job_handlers: true
   install_configuration: true
   install_service: true
+cloudwatch:
+  enabled: false
+  threaded: false
+  delineated_stream: true
+  metric_namespace: "Pits/Device"
+  log_group_name: "/pits/device/DaemonLogging"
+  event_type: "logs"
 device:
   paths:
     event_input: "/usr/share/pinthesky/events/input.json"
@@ -550,11 +557,119 @@ screens:
       - description: Configures camera settings
         name: Camera Configuration
         depends: previous.overwrite
+      - description: Configures CloudWatch logging and metrics
+        name: CloudWatch Configuration
       - description: Installs and configures AWS IoT device client
         name: Device Client
       - description: Installs and configures systemd services
         name: Service Configuration
     type: hub
+  CloudWatch Configuration:
+    back: Install Menu
+    clear_history: true
+    dialog:
+      cancel-label: Back
+      ok-label: Configure
+    handlers:
+      ok: wheel::screens::hub::selection
+    properties:
+      items:
+      - description: Enables the CloudWatch integration
+        configures: cloudwatch.enabled
+        name: Enable CloudWatch
+      - description: Enables background thread for writing logs
+        configures: cloudwatch.threaded
+        depends: cloudwatch.enabled
+        name: Background CloudWatch
+      - description: Delineates CloudWatch log stream by Thing name
+        configures: cloudwatch.delineated_stream
+        depends: cloudwatch.enabled
+        name: Delineate CloudWatch Stream
+      - description: Default metric namespace for EMF style logs
+        name: Metric Namespace
+        depends: cloudwatch.enabled
+      - description: CloudWatch log group name to write to
+        name: Log Group
+        depends: cloudwatch.enabled
+      - description: CloudWatch log event style
+        name: CloudWatch Event Type
+        depends: cloudwatch.enabled
+    type: hub
+  Enable CloudWatch:
+    capture_into: cloudwatch.enabled
+    handlers:
+      cancel:
+      - wheel::handlers::flag
+      - wheel::handlers::cancel
+      capture_into: wheel::handlers::flag
+      ok: wheel::handlers::cancel
+    next: CloudWatch Configuration
+    properties:
+      text: 'Enable the CloudWatch integration?
+
+        Current Value: [\Zb\$state.cloudwatch.enabled\ZB]'
+    type: yesno
+  Background CloudWatch:
+    capture_into: cloudwatch.threaded
+    handlers:
+      cancel:
+      - wheel::handlers::flag
+      - wheel::handlers::cancel
+      capture_into: wheel::handlers::flag
+      ok: wheel::handlers::cancel
+    next: CloudWatch Configuration
+    properties:
+      width: 70
+      height: 7
+      text: 'Reserve a thread to flush CloudWatch events?
+
+        Current Value: [\Zb\$state.cloudwatch.threaded\ZB]'
+    type: yesno
+  Delineate CloudWatch Stream:
+    capture_into: cloudwatch.delineated_stream
+    handlers:
+      cancel:
+      - wheel::handlers::flag
+      - wheel::handlers::cancel
+      capture_into: wheel::handlers::flag
+      ok: wheel::handlers::cancel
+    next: CloudWatch Configuration
+    properties:
+      width: 70
+      height: 7
+      text: 'Write CloudWatch logs to a stream tied to this Thing Name?
+
+        Current Value: [\Zb\$state.cloudwatch.delineated_stream\ZB]'
+    type: yesno
+  Metric Namespace:
+    capture_into: cloudwatch.metric_namespace
+    properties:
+      width: 70
+      height: 7
+      text: CloudWatch Metric Namespace
+    next: CloudWatch Configuration
+    type: input
+  Log Group:
+    capture_into: cloudwatch.log_group_name
+    properties:
+      width: 70
+      height: 7
+      text: CloudWatch LogGroup Name
+    next: CloudWatch Configuration
+    type: input
+  CloudWatch Event Type:
+    capture_into: cloudwatch.event_type
+    handlers:
+      ok: wheel::handlers::cancel
+    properties:
+      items:
+      - description: Only write log events to CloudWatch
+        name: logs
+      - description: Only write EMF events to CloudWatch
+        name: emf
+      - description: Write log and EMF events to CloudWatch
+        name: all
+    type: radiolist
   Install Gauge:
     entrypoint: pits::setup::install::device
     managed: true

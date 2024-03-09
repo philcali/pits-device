@@ -10,6 +10,7 @@ from pinthesky.events import EventThread
 from pinthesky.health import DeviceHealth
 from pinthesky.session import Session
 import argparse
+import os
 import sys
 import signal
 
@@ -148,12 +149,12 @@ def create_parser():
         "--cloudwatch",
         help="enable the cloudwatch upload, default false",
         required=False,
-        default=False,
+        default=os.getenv("CLOUDWATCH", "false") == "true",
         action='store_true')
     parser.add_argument(
         "--cloudwatch-thread",
         action='store_true',
-        default=False,
+        default=os.getenv("CLOUDWATCH_THREADED", "false") == "true",
         required=False,
         help="enable cloudwatch logs to upload in background, default false")
     parser.add_argument(
@@ -173,8 +174,8 @@ def create_parser():
         required=False)
     parser.add_argument(
         "--disable-cloudwatch-stream-split",
-        help="disbles spliting the log stream by thing name",
-        default=False,
+        help="disables splitting the log stream by thing name",
+        default=os.getenv("CLOUDWATCH_DELINEATE_STREAM", "true") == "false",
         required=False,
         action='store_true')
     parser.add_argument(
