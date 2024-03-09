@@ -16,9 +16,4 @@ def set_stream_logger(name="pinthesky", level=logging.DEBUG, fmt_string=None):
     logger.addHandler(handler)
 
 
-class NullHandler(logging.Handler):
-    def emit(self, record: logging.LogRecord) -> None:
-        pass
-
-
-logging.getLogger('pinthesky').addHandler(NullHandler())
+logging.getLogger('pinthesky').addHandler(logging.NullHandler())

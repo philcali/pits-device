@@ -45,7 +45,7 @@ CMD=( "-u" "\$SERVICE" "-n" "\$LINES" )
 ([ "\$SINCE" != '\$since' ] && [ -n "\$SINCE" ]) && CMD+=( "-s" "\$SINCE" )
 ([ "\$UNTIL" != '\$until' ] && [ -n "\$UNTIL" ]) && CMD+=( "-U" "\$UNTIL" )
 
-sudo -u "\$USER" -n journalctl -r \${CMD[@]} 
+sudo -u "\$USER" -n journalctl -r -o cat --no-pager \${CMD[@]} 
 END
 
 function pits::setup::install::load_previous() {

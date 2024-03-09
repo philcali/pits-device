@@ -110,6 +110,33 @@ def test_shadow_reset():
         events.stop()
 
 
+def test_shadow_config_metric():
+    test_handler = TestHandler()
+    events = EventThread()
+    configure_input = "test_shadow_input.json"
+    configure_output = "test_shadow_output.json"
+    shadow_config = ShadowConfig(
+        events=events,
+        configure_input=configure_input,
+        configure_output=configure_output)
+    events.on(test_handler)
+    events.on(shadow_config)
+    events.start()
+    events.fire_event('file_change', {
+        'file_name': configure_output,
+        'context': {
+        }
+    })
+    events.fire_event('file_change', {
+        'file_name': configure_input,
+        'context':{
+        }
+    })
+    while events.event_queue.unfinished_tasks > 0:
+        pass
+    assert test_handler.calls['file_change'] == 2
+
+
 def test_shadow_config_reset():
     events = EventThread()
     configure_input = "test_shadow_input.json"

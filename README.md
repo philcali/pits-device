@@ -41,11 +41,12 @@ Until https://github.com/philcali/pits-device/issues/46 is fixed, you must stick
 
 ![pinthesky.png](https://raw.githubusercontent.com/philcali/pits-device/main/images/pinthesky.png)
 
-The `pinthesky` daemon is very light-weight. The entirety of the application runs on 3 threads:
+The `pinthesky` daemon is very light-weight. The entirety of the application runs on 3 threads (optionally 4 with cloudwatch):
 
 - Single thread to manage the camera
 - Single thread to poll an event queue
 - Single thread to poll inotify
+- (Optional) Single thread to upload logs to CloudWatch
 
 The camera thread detects motion vectors in the recording. The buffer is flushed and an event is
 signaled to combine the buffered video with the live stream. The `h264` file triggers an event

@@ -17,7 +17,7 @@ def test_device_health():
     device_health = DeviceHealth(events=events)
     try:
         assert device_health.emit_health(force=True)
-        while not events.event_queue.empty():
+        while events.event_queue.unfinished_tasks > 0:
             pass
         assert handler.calls["health_end"] == 1
     finally:
