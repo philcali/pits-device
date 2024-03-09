@@ -3,6 +3,7 @@ import os
 import logging
 import time
 
+from math import floor
 from pinthesky.handler import Handler
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ class S3Upload(Handler):
                 s3 = session.client('s3')
                 with open(file_obj, 'rb') as f:
                     s3.upload_fileobj(f, self.bucket_name, loc, ExtraArgs=extra_args)
-                    end_timestamp = int(time.time())
+                    end_timestamp = floor(time.time())
                     emf['Time'] = end_timestamp - source['start_time']
                     logger.info(f'Uploaded to s3://{self.bucket_name}/{loc}', extra={
                         'emf': emf,
@@ -91,7 +92,7 @@ class S3Upload(Handler):
                     'source': source
                 })
             except RuntimeError as e:
-                end_timestamp = int(time.time())
+                end_timestamp = floor(time.time())
                 emf['Time'] = end_timestamp - source['start_time']
                 emf['UploadProcessed'] = 0
                 logger.error(

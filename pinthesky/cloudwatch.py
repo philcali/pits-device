@@ -72,8 +72,6 @@ class CloudWatchLoggingStream(Handler, ShadowConfigHandler):
         return self.log_stream_name
 
     def write(self, message, ingest=None):
-        if message == '':
-            return
         with self.refresh_lock:
             credentials = self.session.login()
             if not self.enabled or not credentials or not self.log_group_name:
@@ -148,8 +146,6 @@ class CloudWatchEventFormat(Handler, ShadowConfigHandler):
             self.namespace = metrics.get('namespace', self.namespace)
 
     def format(self, record: logging.LogRecord):
-        if self.session.thing_name is None:
-            return ''
         existing_emf = getattr(record, 'emf', {})
         # At a high level, we're interested in daemon failures. A logger
         # may post other useful metrics, but we honestly don't care.
@@ -176,7 +172,7 @@ class CloudWatchEventFormat(Handler, ShadowConfigHandler):
         }
         if 'CloudWatchMetrics' in existing_emf:
             for cwm in existing_emf['CloudWatchMetrics']:
-                if 'Dimensions' not in cwm and 'Metrics' not in cwm:
+                if 'Dimensions' not in cwm or 'Metrics' not in cwm:
                     continue
                 emf['_aws']['CloudWatchMetrics'].append({
                     **cwm,

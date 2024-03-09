@@ -157,7 +157,20 @@ def test_cloudwatch_event_format():
         'emf': {
         }
     })
-    assert len(stream.messages) == 2
+    logger.warning('Warning message', exc_info=BaseException(), extra={
+        'emf': {
+            'CloudWatchMetrics': [{
+                'Metrics': [
+                    {
+                        'Name': 'Skipped',
+                        'Unit': 'Count'
+                    }
+                ]
+            }],
+            'Skipped': 1,
+        }
+    })
+    assert len(stream.messages) == 3
     info_event = json.loads(stream.messages[0])
     assert info_event['ThingName'] == 'thing_name'
     assert info_event['Name'] == 'test_cloudwatch'
