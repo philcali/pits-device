@@ -59,6 +59,7 @@ function pits::setup::install::load_previous() {
         echo "Pulling previous configuration"
         echo "XXX"
         pits::setup::invoke cat /etc/pinthesky/pinthesky.env > "$PITS_ENV"
+        source "$PITS_ENV"
         echo "XXX"
         echo "60"
         echo "Finding previous version"
@@ -69,6 +70,12 @@ function pits::setup::install::load_previous() {
         echo "Setting previous configuration for $version"
         echo "XXX"
         if [ -n "$version" ]; then
+            # Allow CloudWatch integration to be managed through pitsctl
+            [ -n "$CLOUDWATCH" ] && [ "$CLOUDWATCH" = "true" ] && wheel::state::set "cloudwatch.enabled" "true" argjson
+            [ -n "$CLOUDWATCH_THREADED" ] && [ "$CLOUDWATCH_THREADED" = "true" ] && wheel::state::set "cloudwatch.threaded" "true" argjson
+            [ -n "$CLOUDWATCH_DELINEATE_STREAM" ] && [ "$CLOUDWATCH_DELINEATE_STREAM" = "false" ] && wheel::state::set "cloudwatch.delineated_stream" "false" argjson
+            [ -n "$CLOUDWATCH_LOG_GROUP" ] && wheel::state::set "cloudwatch.log_group_name" "$CLOUDWATCH_LOG_GROUP"
+            [ -n "$CLOUDWATCH_EVENT_TYPE" ] && wheel::state::set "cloudwatch.event_type" "$CLOUDWATCH_EVENT_TYPE"
             wheel::state::set "software.install" "Nothing"
             wheel::state::set "client.install_software" "false" argjson
             wheel::state::set "client.install_service" "false" argjson
@@ -100,6 +107,11 @@ function pits::setup::install::device() {
         install_tasks+=(pinthesky_cloud)
         install_tasks+=(pinthesky_config)
     fi
+    if [ "$(wheel::state::get "cloudwatch.enabled")" = "true" ]; then
+        install_tasks+=(pinthesky_cloudwatch)
+    fi
+    # Will either copy over the existing env or modified via cloudwatch
+    install_tasks+=(pinthesky_env)
     for entry in $(wheel::state::get "client | to_entries | .[]" -c); do
         name=$(wheel::json::get "$entry" 'key')
         [ "$(wheel::json::get "$entry" 'value')" = 'false' ] && continue
@@ -112,6 +124,43 @@ function pits::setup::install::device() {
         screen="$(wheel::json::set "$screen" "properties.actions[$task_index].action" "pits::setup::install::$action_name")"
     done
     wheel::screens::gauge
+}
+
+function pits::setup::install::pinthesky_cloudwatch() {
+    local log_group_name
+    local existing_group_name
+    # Strip Cloudwatch config, since we're overwriting it
+    cat "$PITS_ENV" | grep -v "CLOUDWATCH" > "$PITS_ENV.tmp"
+    cp "$PITS_ENV.tmp" "$PITS_ENV"
+    rm -rf "$PITS_ENV.tmp"
+    log_group_name=$(wheel::state::get "cloudwatch.log_group_name") || return 254
+    existing_group_name=$(aws logs describe-log-groups \
+        --log-group-name-prefix "$log_group_name" | jq -r ".logGroups[] | select(.logGroupName == \"$log_group_name\")") || {
+            echo "[-] Failed to describe existing log groups" >> "$INSTALL_LOG"
+            return 254
+        }
+    [ -z "$existing_group_name" ] && {
+        aws logs create-log-group --log-group-name "$log_group_name" || {
+            echo "[-] Failed to create log group $log_group_name" >> "$INSTALL_LOG"
+            return 254
+        }
+    }
+    # Drop all configuration in the env file for pitscl management
+    {
+        echo "CLOUDWATCH=true"
+        echo "CLOUDWATCH_THREADED=$(wheel::state::get "cloudwatch.threaded")"
+        echo "CLOUDWATCH_DELINEATE_STREAM=$(wheel::state::get "cloudwatch.delineated_stream")"
+        echo "CLOUDWATCH_LOG_GROUP=$log_group_name"
+        echo "CLOUDWATCH_EVENT_TYPE=$(wheel::state::get "cloudwatch.event_type")"
+        echp "CLOUDWATCH_METRIC_NAMESPACE=$(wheel::state::get "cloudwatch.metric_namespace")"
+    } >> "$PITS_ENV"
+    echo "[+] CloudWatch integration configured" >> "$INSTALL_LOG"
+}
+
+function pits::setup::install::pinthesky_env() {
+    pits::setup::invoke mkdir -p /etc/pinthesky
+    pits::setup::cp "$PITS_ENV" /etc/pinthesky/pinthesky.env
+    echo "[+] Installed pinthesky.env" >> "$INSTALL_LOG"
 }
 
 function pits::setup::install::pinthesky_config() {
@@ -134,9 +183,7 @@ function pits::setup::install::pinthesky_config() {
         # TODO: make a form for this
         echo "SHADOW_UPDATE=empty"
     } >> "$PITS_ENV"
-    pits::setup::invoke mkdir -p /etc/pinthesky
-    pits::setup::cp "$PITS_ENV" /etc/pinthesky/pinthesky.env
-    echo "[+] Installed pinthesky.env" >> "$INSTALL_LOG"
+    echo "[+] Installed pinthesky device configuration" >> "$INSTALL_LOG"
 }
 
 function pits::setup::install::device_client::software() {
@@ -299,6 +346,16 @@ function pits::setup::install::create_policy() {
     local image_prefix=$2
     local video_prefix=$3
     local bucket_name=$4
+    local log_group_name=$5
+    partition=$(aws ssm get-parameter \
+        --name /aws/service/global-infrastructure/current-region/partition \
+        --query Parameter.Value \
+        --output text)
+    region=$(aws ssm get-parameter \
+        --name /aws/service/global-infrastructure/current-region \
+        --query Parameter.Value \
+        --output text)
+    account=$(aws sts get-caller-identity --query Account --output text)
     cat << EOF > default.iam.policy.json
 {
     "Version": "2012-10-17",
@@ -310,8 +367,28 @@ function pits::setup::install::create_policy() {
                 "s3:Abort*"
             ],
             "Resource": [
-                "arn:aws:s3:::$bucket_name/$video_prefix/*",
-                "arn:aws:s3:::$bucket_name/$image_prefix/*"
+                "arn:$partition:s3:::$bucket_name/$video_prefix/*",
+                "arn:$partition:s3:::$bucket_name/$image_prefix/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:DescribeLogGroups",
+            ],
+            "Resource": [
+                "arn:$partition:logs:$region:$account:log-group/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogStream",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents"
+            ],
+            "Resource": [
+                "arn:$partition:logs:$region:$account:log-group/$log_group_name:log-stream:*",
             ]
         }
     ]
@@ -340,6 +417,7 @@ function pits::setup::install::pinthesky_storage() {
     policy_name=$(wheel::state::get 'storage.policy_name')
     image_prefix=$(wheel::state::get 'storage.image_prefix')
     video_prefix=$(wheel::state::get 'storage.video_prefix')
+    log_group_name=$(wheel::state::get 'cloudwatch.log_group_name')
     if ! aws s3api create-bucket --bucket "$bucket_name"; then
         echo "[-] Failed to create storage bucket $bucket_name" >> "$INSTALL_LOG"
         return 254
@@ -349,6 +427,7 @@ function pits::setup::install::pinthesky_storage() {
         echo "BUCKET_PREFIX=$video_prefix"
         echo "BUCKET_IMAGE_PREFIX=$image_prefix"
     } >> "$PITS_ENV"
+    # TODO: Allow policy changes, easier done through the infra package
     {
         aws iam get-policy \
             --policy-arn "arn:$partition:iam::$account:policy/$policy_name" \
@@ -358,7 +437,8 @@ function pits::setup::install::pinthesky_storage() {
             "$policy_name" \
             "$image_prefix" \
             "$video_prefix" \
-            "$bucket_name" || return 254
+            "$bucket_name" \
+            "$log_group_name" || return 254
     } >> "$CONFIGURED_IAM_POLICY"
 }
 
@@ -591,6 +671,12 @@ function pits::setup::install::pinthesky_camera() {
 }
 
 function pits::setup::install::pinthesky_service() {
+    local cloudwatch=""
+    if [ "$(wheel::state::get "cloudwatch.enabled")" = "true" ]; then
+        cloudwatch="--cloudwatch"
+        [ "$(wheel::state::get "cloudwatch.threaded")" = "true" ] && cloudwatch+=" --cloudwatch-threaded"
+        [ "$(wheel::state::get "cloudwatch.delineated_stream")" = "false" ] && cloudwatch+=" --disable-cloudwatch-stream-split"
+    fi
     cat << EOF > pinthesky.service
 [Unit]
 Description=Pi In the Sky Device Service
@@ -628,7 +714,10 @@ ExecStart=/usr/local/bin/pinthesky \
     --encoding-level \$ENCODING_LEVEL \
     --encoding-profile \$ENCODING_PROFILE \
     --shadow-update \$SHADOW_UPDATE \
-    --health-interval \$HEALTH_INTERVAL
+    --health-interval \$HEALTH_INTERVAL \
+    --cloudwatch-log-group \$CLOUDWATCH_LOG_GROUP \
+    --cloudwatch-metric-namespace \$CLOUDWATCH_METRIC_NAMESPACE \
+    --cloudwatch-event-type \$CLOUDWATCH_EVENT_TYPE $cloudwatch
 Restart=always
 EOF
 
