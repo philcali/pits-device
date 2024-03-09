@@ -129,7 +129,7 @@ def test_shadow_config_metric():
     })
     events.fire_event('file_change', {
         'file_name': configure_input,
-        'context':{
+        'context': {
         }
     })
     while events.event_queue.unfinished_tasks > 0:

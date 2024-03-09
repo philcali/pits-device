@@ -158,7 +158,7 @@ def create_parser():
         help="enable cloudwatch logs to upload in background, default false")
     parser.add_argument(
         "--cloudwatch-event-type",
-        default="all",
+        default="logs",
         required=False,
         help="event type to upload: logs,emf,all")
     parser.add_argument(
@@ -264,12 +264,15 @@ def main():
         event_thread.on(log_stream)
         # Create handler that writes logs to CW
         log_handler = logging.StreamHandler(stream=log_stream)
+        log_handler.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(name)s [%(levelname)s] %(message)s"))
         # Create handler that writes EMF to CW
         format = CloudWatchEventFormat(
             session=auth_session,
             namespace=parsed.cloudwatch_metric_namespace)
         shadow_update.add_handler(format)
-        event_handler.on(format)
+        event_thread.on(format)
         event_handler = logging.StreamHandler(stream=log_stream)
         event_handler.addFilter(CloudWatchEventFilter())
         event_handler.setFormatter(format)

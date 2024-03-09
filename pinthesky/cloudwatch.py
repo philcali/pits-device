@@ -140,7 +140,7 @@ class CloudWatchEventFormat(Handler, ShadowConfigHandler):
         return ConfigUpdate('cloudwatch_metrics', {
             'namespace': self.namespace,
         })
-    
+
     def on_file_change(self, event):
         if "current" in event["content"]:
             desired = event["content"]["current"]["state"]["desired"]

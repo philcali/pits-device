@@ -9,6 +9,7 @@ from pinthesky.session import Session
 from pinthesky.cloudwatch import CloudWatchEventFilter, CloudWatchEventFormat, CloudWatchLoggingStream, ThreadedStream
 from pinthesky.config import ConfigUpdate
 
+
 class CaptureHandler(logging.Handler):
     def __init__(self, level: int | str = 0) -> None:
         super().__init__(level)
@@ -67,7 +68,7 @@ def test_threaded_stream():
     stream = CaptureStream()
     stream_thread = ThreadedStream(stream=stream)
     stream_thread.start()
-    
+
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     logger.addHandler(logging.StreamHandler(stream=stream_thread))
@@ -125,7 +126,6 @@ def test_cloudwatch_event_format():
     assert format.update_document() == ConfigUpdate('cloudwatch_metrics', {
         'namespace': 'Pits/ThingName',
     })
-
 
     handler = logging.StreamHandler(stream=stream)
     handler.setFormatter(format)

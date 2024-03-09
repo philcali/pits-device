@@ -70,7 +70,7 @@ class EventThread(threading.Thread):
                     emf = {
                         'CloudWatchMetrics': [
                             {
-                                'Dimensions':[
+                                'Dimensions': [
                                     ['ThingName', 'Operation'],
                                     ['ThingName', 'Event']
                                 ],
