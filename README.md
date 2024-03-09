@@ -143,7 +143,7 @@ delineate the stream by `thing_name`. To disable this behavior, use
   --cloudwatch-log-group CLOUDWATCH_LOG_GROUP
                         uploads to this cloudwatch log group
   --disable-cloudwatch-stream-split
-                        disbles spliting the log stream by thing name
+                        disables splitting the log stream by thing name
 ```
 
 __Note__: These can be configured correctly for you if you follow the guided `pitsctl` installation
