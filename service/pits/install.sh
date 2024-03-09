@@ -374,7 +374,7 @@ function pits::setup::install::create_policy() {
         {
             "Effect": "Allow",
             "Action": [
-                "logs:DescribeLogStreams",
+                "logs:DescribeLogGroups",
             ],
             "Resource": [
                 "arn:$partition:logs:$region:$account:log-group/*"
@@ -384,16 +384,8 @@ function pits::setup::install::create_policy() {
             "Effect": "Allow",
             "Action": [
                 "logs:CreateLogStream",
-                "logs:DescribeLogStreams"
-            ],
-            "Resource": [
-                "arn:$partition:logs:$region:$account:log-group/$log_group_name:*",
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:PutLogEvents",
+                "logs:DescribeLogStreams",
+                "logs:PutLogEvents"
             ],
             "Resource": [
                 "arn:$partition:logs:$region:$account:log-group/$log_group_name:log-stream:*",
