@@ -1,9 +1,8 @@
 from datetime import timedelta
-import logging
 
 from pinthesky import VERSION, input, output, upload, set_stream_logger
 from pinthesky.camera import CameraThread
-from pinthesky.cloudwatch import CloudWatchLoggingStream, CloudWatchEventFormat, CloudWatchEventFilter, ThreadedStream
+from pinthesky.cloudwatch import CloudWatchManager
 from pinthesky.combiner import VideoCombiner
 from pinthesky.config import ShadowConfig
 from pinthesky.events import EventThread
@@ -197,7 +196,7 @@ def main():
     if parsed.version:
         print(VERSION)
         exit(0)
-    set_stream_logger("pinthesky", level=logging.getLevelName(parsed.log_level))
+    set_stream_logger("pinthesky", level=parsed.log_level)
     event_thread = EventThread()
     device_health = DeviceHealth(
         events=event_thread,
@@ -236,6 +235,15 @@ def main():
         events=event_thread,
         combine_dir=parsed.combine_dir)
     event_input_handler = input.InputHandler(events=event_thread)
+    cloudwatch_manager = CloudWatchManager(
+        session=auth_session,
+        log_level=parsed.log_level,
+        delineate_stream=not parsed.disable_cloudwatch_stream_split,
+        threaded=parsed.cloudwatch_thread,
+        enabled=parsed.cloudwatch,
+        log_group_name=parsed.cloudwatch_log_stream,
+        namespace=parsed.cloudwatch_metric_namespace,
+        event_type=parsed.cloudwatch_event_type)
     event_thread.on(camera_thread)
     event_thread.on(video_combiner)
     event_thread.on(video_uploader)
@@ -243,6 +251,7 @@ def main():
     event_thread.on(event_input_handler)
     event_thread.on(auth_session)
     event_thread.on(device_health)
+    event_thread.on(cloudwatch_manager)
     shadow_update = ShadowConfig(
         events=event_thread,
         configure_input=parsed.configure_input,
@@ -251,43 +260,9 @@ def main():
     shadow_update.add_handler(camera_thread)
     shadow_update.add_handler(auth_session)
     shadow_update.add_handler(device_health)
-
-    cloudwatch_thread = None
-    if parsed.cloudwatch:
-        root = logging.getLogger('pinthesky')
-        # Prepare the ingest stream
-        log_stream = CloudWatchLoggingStream(
-            delineate_stream=not parsed.disable_cloudwatch_stream_split,
-            enabled=parsed.cloudwatch,
-            log_group_name=parsed.cloudwatch_log_stream,
-            session=auth_session)
-        shadow_update.add_handler(log_stream)
-        event_thread.on(log_stream)
-        # Create handler that writes logs to CW
-        log_handler = logging.StreamHandler(stream=log_stream)
-        log_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s %(name)s [%(levelname)s] %(message)s"))
-        # Create handler that writes EMF to CW
-        format = CloudWatchEventFormat(
-            session=auth_session,
-            namespace=parsed.cloudwatch_metric_namespace)
-        shadow_update.add_handler(format)
-        event_thread.on(format)
-        event_handler = logging.StreamHandler(stream=log_stream)
-        event_handler.addFilter(CloudWatchEventFilter())
-        event_handler.setFormatter(format)
-        if parsed.cloudwatch_thread:
-            # Replace stream to be backed by thread
-            cloudwatch_thread = ThreadedStream(stream=log_stream)
-            log_handler.setStream(cloudwatch_thread)
-            event_handler.setStream(cloudwatch_thread)
-            cloudwatch_thread.start()
-        # Enable Logs, EMF, or both
-        if parsed.cloudwatch_event_type in ['logs', 'all']:
-            root.addHandler(log_handler)
-        if parsed.cloudwatch_event_type in ['emf', 'all']:
-            root.addHandler(event_handler)
+    shadow_update.add_handler(cloudwatch_manager)
+    # Allow adaptation before shadow document kicks in
+    cloudwatch_manager.adapt_logging()
 
     if not shadow_update.update_document(parsed):
         shadow_update.reset_from_document()
@@ -305,8 +280,7 @@ def main():
         camera_thread.stop()
         event_thread.stop()
         event_output.reset()
-        if cloudwatch_thread is not None:
-            cloudwatch_thread.stop()
+        cloudwatch_manager.stop()
 
     signal.signal(signalnum=signal.SIGINT, handler=signal_handler)
     camera_thread.join()
