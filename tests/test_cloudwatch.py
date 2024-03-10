@@ -81,6 +81,8 @@ def test_cloudwatch_manager():
     assert len(root.handlers) > handler_length
     assert manager.log_thread is not None
 
+    manager.stop()
+
     assert manager.update_document() == ConfigUpdate('cloudwatch', {
         'enabled': True,
         'threaded': True,
