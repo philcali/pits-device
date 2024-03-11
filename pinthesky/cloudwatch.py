@@ -5,6 +5,7 @@ import queue
 import json
 import datetime
 from math import floor
+from pinthesky import VERSION
 from pinthesky.handler import Handler
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 
@@ -245,6 +246,7 @@ class CloudWatchEventFormat():
             'ThingName': self.session.thing_name,
             'Name': record.name,
             'Message': record.getMessage(),
+            'Version': VERSION,
             'Failure': 1 if record.levelno >= logging.ERROR else 0,
         }
         if 'CloudWatchMetrics' in existing_emf:
