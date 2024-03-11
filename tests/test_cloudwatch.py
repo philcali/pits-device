@@ -4,6 +4,7 @@ import json
 import boto3
 from datetime import datetime
 from unittest.mock import patch, MagicMock
+from pinthesky import VERSION
 from pinthesky.events import EventThread
 from pinthesky.session import Session
 from pinthesky.cloudwatch import CloudWatchManager, CloudWatchEventFilter, CloudWatchEventFormat, CloudWatchLoggingStream, ThreadedStream
@@ -246,6 +247,7 @@ def test_cloudwatch_event_format():
     assert error_event['Name'] == 'test_cloudwatch'
     assert error_event['Message'] == 'Failure message'
     assert error_event['Failure'] == 1
+    assert error_event['Version'] == VERSION
 
 
 def test_cloudwatch_logging_stream():
