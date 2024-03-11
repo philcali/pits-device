@@ -3,6 +3,7 @@ from math import floor
 import os
 from time import time
 from unittest.mock import patch
+from pinthesky.config import ConfigUpdate
 from pinthesky.upload import S3Upload
 from pinthesky.events import EventThread
 from pinthesky.session import Session
@@ -141,3 +142,47 @@ def test_image_upload(bsession):
     finally:
         if os.path.exists(image_file):
             os.remove(image_file)
+
+
+def test_configuration_changes():
+    events = EventThread()
+    session = Session(
+        cert_path="cert_path",
+        key_path="key_path",
+        cacert_path="cacert_path",
+        thing_name="thing_name",
+        role_alias="role_alias",
+        credentials_endpoint="example.com")
+    upload = S3Upload(
+        events=events,
+        bucket_name="bucket_name",
+        bucket_prefix="motion-videos",
+        bucket_image_prefix="capture_images",
+        enaabled=False,
+        session=session)
+    events.start()
+    events.on(upload)
+    events.fire_event('file_change', {
+        'content': {
+            'current': {
+                'state': {
+                    'desired': {
+                        'storage': {
+                            'enabled': True,
+                            'bucket_name': 'fartso-bucket',
+                            'video_prefix': 'motion_videos',
+                            'image_prefix': 'capture-images'
+                        }
+                    }
+                }
+            }
+        }
+    })
+    events.event_queue.join()
+
+    assert upload.update_document() == ConfigUpdate('storage', {
+        'enabled': True,
+        'bucket_name': 'fartso-bucket',
+        'video_prefix': 'motion_videos',
+        'image_prefix': 'capture-images',
+    })

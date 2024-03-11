@@ -261,6 +261,7 @@ def main():
     shadow_update.add_handler(auth_session)
     shadow_update.add_handler(device_health)
     shadow_update.add_handler(cloudwatch_manager)
+    shadow_update.add_handler(video_uploader)
     # Allow adaptation before shadow document kicks in
     cloudwatch_manager.adapt_logging()
 
