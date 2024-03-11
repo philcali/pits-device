@@ -4,12 +4,13 @@ import logging
 import time
 
 from math import floor
+from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 
 logger = logging.getLogger(__name__)
 
 
-class S3Upload(Handler):
+class S3Upload(Handler, ShadowConfigHandler):
     """
     Handles the `combine_end` to flush the video content to a specific path by
     thing name. Note: if the session is not connected to a remote IoT Thing,
@@ -20,12 +21,31 @@ class S3Upload(Handler):
             bucket_name,
             bucket_prefix,
             session,
-            bucket_image_prefix=None):
+            bucket_image_prefix=None,
+            enaabled=True):
         self.events = events
         self.bucket_name = bucket_name
         self.bucket_prefix = bucket_prefix
         self.session = session
         self.bucket_image_prefix = bucket_image_prefix
+        self.enabled = enaabled
+
+    def update_document(self) -> ConfigUpdate:
+        return ConfigUpdate('storage', {
+            'enabled': self.enabled,
+            'bucket_name': self.bucket_name,
+            'video_prefix': self.bucket_prefix,
+            'image_prefix': self.bucket_image_prefix,
+        })
+
+    def on_file_change(self, event):
+        if 'current' in event['content']:
+            desired = event['content']['current']['state']['desired']
+            storage = desired.get('storage', {})
+            self.enabled = storage.get('enabled', self.enabled)
+            self.bucket_name = storage.get('bucket_name', self.bucket_name)
+            self.bucket_prefix = storage.get('video_prefix', self.bucket_prefix)
+            self.bucket_image_prefix = storage.get('image_prefix', self.bucket_image_prefix)
 
     def __upload_to_bucket(
             self,
@@ -69,7 +89,7 @@ class S3Upload(Handler):
                 ],
                 'Size': stat.st_size,
                 'Operation': 'Upload',
-                'UploadProcessed': 1,
+                'UploadProcessed': 0,
                 'File': video,
                 'FileType': file_type,
                 'Source': source['name'],
@@ -77,24 +97,25 @@ class S3Upload(Handler):
             try:
                 s3 = session.client('s3')
                 with open(file_obj, 'rb') as f:
-                    s3.upload_fileobj(f, self.bucket_name, loc, ExtraArgs=extra_args)
+                    if self.enabled:
+                        s3.upload_fileobj(f, self.bucket_name, loc, ExtraArgs=extra_args)
+                        emf['UploadProcessed'] = 1
+                        self.events.fire_event('upload_end', {
+                            'start_time': source['start_time'],
+                            'upload': {
+                                'bucket_name': self.bucket_name,
+                                'bucket_key': loc
+                            },
+                            'source': source
+                        })
                     end_timestamp = floor(time.time())
                     emf['Time'] = end_timestamp - source['start_time']
                     logger.info(f'Uploaded to s3://{self.bucket_name}/{loc}', extra={
                         'emf': emf,
                     })
-                self.events.fire_event('upload_end', {
-                    'start_time': source['start_time'],
-                    'upload': {
-                        'bucket_name': self.bucket_name,
-                        'bucket_key': loc
-                    },
-                    'source': source
-                })
             except RuntimeError as e:
                 end_timestamp = floor(time.time())
                 emf['Time'] = end_timestamp - source['start_time']
-                emf['UploadProcessed'] = 0
                 logger.error(
                     f'Failed to upload to s3://{self.bucket_name}/{loc}: {e}',
                     exc_info=e,
