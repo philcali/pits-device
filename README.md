@@ -167,6 +167,24 @@ Usage: pitsctl - v0.7.1: Install or manage pinthesky software
   -v,--version: Prints the version and exists
 ```
 
+## Control Plane and Infrastructure
+
+The [pits-infra][1] package can be used to deploy a complete and working 
+AWS cloud infrastructure to support the device configuration and integration.
+The infrastructure contains the following:
+
+- Storage configuration
+- Policy and device authorization
+- Control Plane deployment
+- Console deployment
+- Console authorization through Cognito
+
+Follow the [re-use][2] section in the README to deploy it for at no charge
+or 50 cents a month if a custom domain is included.
+
+[1]: https://github.com/philcali/pits-infra
+[2]: https://github.com/philcali/pits-infra?tab=readme-ov-file#re-use
+
 ## Optimal Settings
 
 Adjusting the bitrate, buffer, resolution, framerate, etc... It's a lot to take in.
