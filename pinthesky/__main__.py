@@ -241,7 +241,7 @@ def main():
         delineate_stream=not parsed.disable_cloudwatch_stream_split,
         threaded=parsed.cloudwatch_thread,
         enabled=parsed.cloudwatch,
-        log_group_name=parsed.cloudwatch_log_stream,
+        log_group_name=parsed.cloudwatch_log_group,
         namespace=parsed.cloudwatch_metric_namespace,
         event_type=parsed.cloudwatch_event_type)
     event_thread.on(camera_thread)
