@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION=0.8.1
+VERSION=0.8.2
 RAW_CONTENT_URL="https://raw.githubusercontent.com/philcali/pits-device/main"
 ASSUME_ROOT="false"
 MACHINE_HOST=""
