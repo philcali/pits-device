@@ -22,7 +22,7 @@ if [ -z "\$VERSION" ] || [ "\$VERSION" = "\\\$version" ]; then
     sudo -u "\$USER" -n python3 -m pip install --upgrade pinthesky
 else
     sudo -u "\$USER" -n python3 -m pip uninstall -y pinthesky
-    sudo -u "\$USER" -n python3 -m pip install "pinthesky\$VERSION"
+    sudo -u "\$USER" -n python3 -m pip install "pinthesky==\$VERSION"
 fi
 END
 
