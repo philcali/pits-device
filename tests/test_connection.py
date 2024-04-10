@@ -3,6 +3,7 @@ import json
 from botocore.exceptions import ClientError
 from functools import partial
 from pinthesky.connection import ConnectionThread, ConnectionHandler, ConnectionManager, ProcessBuffer
+from pinthesky.config import ConfigUpdate
 from pinthesky.events import EventThread
 from unittest.mock import patch, MagicMock
 from test_handler import TestHandler
@@ -95,11 +96,34 @@ def test_connection_manager_no_url():
         endpoint_url=None,
     )
 
+    assert manager.update_document() == ConfigUpdate("dataplane", {
+        'enabled': False,
+        'endpoint_url': None
+    })
+
     management = MagicMock()
     with patch.object(boto3.Session, 'client', return_value=management) as mock_client:
         manager.post_to_connection("$connectionId", {})
 
     mock_client.assert_not_called()
+    manager.on_file_change({
+        'content': {
+            'current': {
+                'state': {
+                    'desired': {
+                        'dataplane': {
+                            'enabled': True,
+                            'endpoint_url': 'http://example.com'
+                        }
+                    }
+                }
+            }
+        }
+    })
+    assert manager.update_document() == ConfigUpdate("dataplane", {
+        'enabled': True,
+        'endpoint_url': 'http://example.com'
+    })
 
 
 def test_connection_manager_no_credentials():
@@ -107,6 +131,7 @@ def test_connection_manager_no_credentials():
     manager = ConnectionManager(
         session=session,
         endpoint_url="http://example.com",
+        enabled=True,
     )
 
     def login():
@@ -126,6 +151,7 @@ def test_connection_manager_happy_path():
     manager = ConnectionManager(
         session=session,
         endpoint_url="http://example.com",
+        enabled=True
     )
 
     def login():
@@ -158,6 +184,7 @@ def test_connection_manager_post_failed():
     manager = ConnectionManager(
         session=session,
         endpoint_url="http://example.com",
+        enabled=True,
     )
 
     def login():

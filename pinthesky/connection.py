@@ -2,6 +2,7 @@ import boto3
 import json
 import logging
 from botocore.exceptions import ClientError
+from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 from threading import Thread
 
@@ -63,13 +64,27 @@ class ConnectionThread(Thread):
             })
 
 
-class ConnectionManager:
-    def __init__(self, session, endpoint_url=None) -> None:
+class ConnectionManager(ShadowConfigHandler, Handler):
+    def __init__(self, session, enabled=False, endpoint_url=None) -> None:
         self.session = session
         self.endpoint_url = endpoint_url
+        self.enabled = enabled
+
+    def update_document(self) -> ConfigUpdate:
+        return ConfigUpdate("dataplane", {
+            'enabled': self.enabled,
+            'endpoint_url': self.endpoint_url,
+        })
+    
+    def on_file_change(self, event):
+        if "current" in event["content"]:
+            desired = event["content"]["current"]["state"]["desired"]
+            dataplane = desired.get("dataplane", {})
+            self.enabled = dataplane.get("enabled", self.enabled)
+            self.endpoint_url = dataplane.get("endpoint_url", self.endpoint_url)
 
     def post_to_connection(self, connection_id, data):
-        if self.endpoint_url is None:
+        if not self.enabled or self.endpoint_url is None:
             return
         credentials = self.session.login()
         if credentials is None:
