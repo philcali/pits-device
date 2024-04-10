@@ -83,10 +83,18 @@ class CloudWatchManager(Handler, ShadowConfigHandler):
                 self.event_handler.setStream(self.log_thread)
                 self.log_thread.start()
             # Enable Logs, EMF, or both
+            logs_enabled = False
+            emf_enabled = False
             if self.enabled and self.event_type in ['logs', 'all']:
                 root.addHandler(self.log_handler)
+                logs_enabled = True
             if self.enabled and self.event_type in ['emf', 'all']:
                 root.addHandler(self.event_handler)
+                emf_enabled = True
+            if not logs_enabled:
+                self.log_handler = None
+            if not emf_enabled:
+                self.event_handler = None
 
     def update_document(self) -> ConfigUpdate:
         return ConfigUpdate('cloudwatch', {

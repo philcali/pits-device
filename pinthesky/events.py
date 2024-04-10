@@ -19,7 +19,11 @@ event_names = [
     'capture_video',
     'recording_change',
     'health',
-    'health_end'
+    'health_end',
+    'configuration',
+    'configuration_end',
+    'record',
+    'record_end',
 ]
 
 

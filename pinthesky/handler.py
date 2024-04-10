@@ -89,3 +89,27 @@ class Handler():
         - `mem_total`: memory total in KB
         """
         pass
+
+    def on_configuration(self, event):
+        """
+        Signal to read configuration out of daemon memory.
+        """
+        pass
+
+    def on_configuration_end(self, event):
+        """
+        Event containing configuration data pulled from the device.
+        """
+        pass
+
+    def on_record(self, event):
+        """
+        Event containing configuration for a live recording.
+        """
+        pass
+
+    def on_record_end(self, event):
+        """
+        Event containing configuration for ending a live recording.
+        """
+        pass

@@ -43,6 +43,18 @@ class TestHandler(Handler):
     def on_capture_video(self, event):
         self.__on_event('capture_video', event)
 
+    def on_configuration_end(self, event):
+        self.__on_event('configuration', event)
+
+    def on_configuration(self, event):
+        self.__on_event('configuration_end', event)
+
+    def on_record(self, event):
+        self.__on_event('record', event)
+
+    def on_record_end(self, event):
+        self.__on_event('record_end', event)
+
 
 def test_handler():
     handler = TestHandler()

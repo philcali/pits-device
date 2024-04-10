@@ -2,5 +2,6 @@
 omit =
     pinthesky/__main__.py
     pinthesky/motion_detect.py
+    pinthesky/conversion.py
     setup.py
     tests/*

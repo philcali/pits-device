@@ -161,7 +161,7 @@ START_SCREEN="Welcome"
 cat << EOF | dialog-wheel --yaml -d defaults.yaml -l pitsctl.log -L "$LOG" -s "$START_SCREEN"
 dialog:
   $PROGRAM
-  backtitle: Pi In The Sky - Setup Wizard
+  backtitle: Pi In The Sky - Setup Wizard - v$VERSION
   colors: true
 error: Error
 exit: Exit
