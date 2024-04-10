@@ -75,7 +75,7 @@ class ConnectionManager(ShadowConfigHandler, Handler):
             'enabled': self.enabled,
             'endpoint_url': self.endpoint_url,
         })
-    
+
     def on_file_change(self, event):
         if "current" in event["content"]:
             desired = event["content"]["current"]["state"]["desired"]

@@ -29,7 +29,7 @@ def test_connection_thread():
 
     def poll():
         return True
-    
+
     process.poll = poll
     process.stdout = stdout
 
@@ -68,7 +68,7 @@ def test_connection_thread_manager_failed():
 
     def poll():
         return None
-    
+
     process.poll = poll
     process.stdout = stdout
 
@@ -77,7 +77,7 @@ def test_connection_thread_manager_failed():
 
     def post_to_connection(connection_id, data):
         return False
-    
+
     manager.post_to_connection = post_to_connection
     process.stdout.read1 = read1
     process.stdout.close = poll
@@ -120,6 +120,7 @@ def test_connection_manager_no_url():
             }
         }
     })
+
     assert manager.update_document() == ConfigUpdate("dataplane", {
         'enabled': True,
         'endpoint_url': 'http://example.com'
