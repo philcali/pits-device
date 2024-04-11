@@ -39,9 +39,14 @@ class EventThread(threading.Thread):
         self.handlers = {}
 
     def on(self, handler: Handler):
+        base_handler = Handler()
         for event_name in event_names:
             method_name = f'on_{event_name}'
             method = getattr(handler, method_name)
+            handler_method = getattr(base_handler, method_name)
+            if method.__func__ is handler_method.__func__:
+                logger.debug(f'Skipping {handler.__class__.__name__}:{method_name}')
+                continue
             self.on_event(
                 event_name=event_name,
                 handler=partial(method),
