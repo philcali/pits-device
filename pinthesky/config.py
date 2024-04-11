@@ -60,13 +60,17 @@ class ShadowConfig(Handler):
                     'content': content
                 })
 
+    def generate_document(self):
+        resulting_document = {}
+        for handler in self.__handlers:
+            rval = handler.update_document()
+            if rval is not None:
+                resulting_document[rval.name] = rval.body
+        return resulting_document
+
     def update_document(self, parser):
         if self.__should_update(parser.shadow_update):
-            resulting_document = {}
-            for handler in self.__handlers:
-                rval = handler.update_document()
-                if rval is not None:
-                    resulting_document[rval.name] = rval.body
+            resulting_document = self.generate_document()
             if len(resulting_document) == 0:
                 logger.info('There was no update, Skipping.')
                 return False
@@ -76,6 +80,12 @@ class ShadowConfig(Handler):
             logger.info(f'Successfully updated {self.__configure_input}')
             return True
         return False
+
+    def on_configuration(self, event):
+        self.__events.fire_event('configuration_end', {
+            'configuration': self.generate_document(),
+            **event,
+        })
 
     def on_file_change(self, event):
         if event['file_name'] == self.__configure_output:

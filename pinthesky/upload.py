@@ -106,7 +106,7 @@ class S3Upload(Handler, ShadowConfigHandler):
                                 'bucket_name': self.bucket_name,
                                 'bucket_key': loc
                             },
-                            'source': source
+                            **source,
                         })
                     end_timestamp = floor(time.time())
                     emf['Time'] = end_timestamp - source['start_time']

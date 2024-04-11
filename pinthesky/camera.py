@@ -2,6 +2,8 @@ from datetime import datetime
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 from pinthesky.health import DeviceHealth
+from pinthesky.conversion import VideoConversion
+from pinthesky.connection import ProcessBuffer, ConnectionThread
 import logging
 import time
 import threading
@@ -25,7 +27,8 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             motion_detection_class=None,
             capture_dir=None,
             device_health=None,
-            buffer_size=None):
+            buffer_size=None,
+            connection_manager=None):
         super().__init__(daemon=True)
         self.__camera_class = camera_class
         self.__stream_class = stream_class
@@ -35,6 +38,8 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         self.flushing_ts = None
         self.flushing_buffer = None
         self.flushing_trigger = None
+        self.recording_thread = None
+        self.connection_manager = connection_manager
         self.buffer_size = buffer_size
         self.events = events
         self.buffer = buffer
@@ -84,17 +89,6 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.__camera_class = PiCamera
         return self.__camera_class()
 
-    def on_capture_image(self, event):
-        result = f'{self.capture_dir}/img-{event["timestamp"]}.jpg'
-        if 'file_name' in event:
-            result = f'{self.capture_dir}/{event["file_name"]}'
-        self.camera.capture(result, use_video_port=True)
-        logger.debug(f'Capture to {result}')
-        self.events.fire_event('capture_image_end', {
-            'image_file': result,
-            'start_time': event['timestamp']
-        })
-
     def __flush_start(self, trigger, event):
         if not self.flushing_stream:
             logger.info(
@@ -105,6 +99,29 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                 self.flushing_buffer = event['duration']
             self.flushing_stream = True
             self.flushing_trigger = trigger
+            self.flushing_event = event
+
+    def on_capture_image(self, event):
+        result = f'{self.capture_dir}/img-{event["timestamp"]}.jpg'
+        if 'file_name' in event:
+            result = f'{self.capture_dir}/{event["file_name"]}'
+        self.camera.capture(result, use_video_port=True)
+        logger.debug(f'Capture to {result}')
+        self.events.fire_event('capture_image_end', {
+            'image_file': result,
+            'start_time': event['timestamp'],
+            **event,
+        })
+
+    def on_record(self, event):
+        with self.configuration_lock:
+            if event['session']['start']:
+                self.pause()
+                self.record(event)
+            elif event['session']['stop']:
+                self.pause()
+                self.recording_thread.join()
+                self.recording_thread = None
 
     def on_motion_start(self, event):
         self.__flush_start('motion', event)
@@ -187,9 +204,17 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.camera.split_recording(self.historical_stream)
             self.events.fire_event('flush_end', {
                 'start_time': self.flushing_ts,
-                'trigger': self.flushing_trigger
+                'trigger': self.flushing_trigger,
+                **self.flushing_event,
             })
             self.flushing_stream = False
+
+    def __enable_default_recording(self):
+        return (
+            self.recording_thread is None and
+            not self.flushing_stream and
+            self.recording_window
+        )
 
     def run(self):
         logger.info('Starting camera thread')
@@ -198,7 +223,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.device_health.emit_health(force=False)
             # Configuration lock will prevent a race on "resume" from update
             with self.configuration_lock:
-                if not self.flushing_stream and self.recording_window:
+                if self.__enable_default_recording():
                     now = datetime.now()
                     if now.hour < self.start_hour or now.hour > self.end_hour:
                         self.pause()
@@ -230,6 +255,24 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                 profile=self.encoding_profile,
                 level=self.encoding_level,
                 motion_output=self.__new_motion_detect())
+            logger.info("Camera is now recording")
+            self.events.fire_event('recording_change', {
+                'recording': True
+            })
+            return True
+        return False
+
+    def record(self, event):
+        if not self.camera.recording:
+            conversion = VideoConversion(self.camera)
+            self.recording_thread = ConnectionThread(
+                buffer=ProcessBuffer(conversion.process),
+                manager=self.connection_manager,
+                events=self.events,
+                event_data=event,
+            )
+            self.camera.start_recording(conversion, 'yuv')
+            self.recording_thread.start()
             logger.info("Camera is now recording")
             self.events.fire_event('recording_change', {
                 'recording': True

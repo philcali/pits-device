@@ -115,6 +115,8 @@ def test_cloudwatch_manager():
     })
     events.event_queue.join()
     assert manager.log_thread is None
+    assert manager.log_handler is None
+    assert manager.event_handler is None
     assert len(root.handlers) == handler_length
 
 

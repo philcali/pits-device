@@ -4,6 +4,7 @@ from pinthesky import VERSION, input, output, upload, set_stream_logger
 from pinthesky.camera import CameraThread
 from pinthesky.cloudwatch import CloudWatchManager
 from pinthesky.combiner import VideoCombiner
+from pinthesky.connection import ConnectionManager
 from pinthesky.config import ShadowConfig
 from pinthesky.events import EventThread
 from pinthesky.health import DeviceHealth
@@ -18,176 +19,213 @@ def create_parser():
     parser = argparse.ArgumentParser(
         description="Simple camera stream that captures motion video events")
     parser.add_argument(
-        "--log-level",
-        help="configured log level of the pinthesky app, default INFO",
-        required=False,
-        default='INFO')
-    parser.add_argument(
         "--version",
         help="displays the current version",
         action='store_true')
     parser.add_argument(
-        "--combine-dir",
-        help="the directory to combine video, defaults to motion_videos",
-        default="motion_videos")
-    parser.add_argument(
-        "--rotation",
-        help="rotate the video, valid arguments [0, 90, 180, 270]",
-        default=270,
-        type=int)
-    parser.add_argument(
-        "--encoding-bitrate",
-        help="the bitrate for the camera, default 17000000",
-        default=17000000,
-        type=int)
-    parser.add_argument(
-        "--encoding-profile",
-        help="the camera encoding profile, default high",
-        default="high")
-    parser.add_argument(
-        "--encoding-level",
-        help="the encoding level, default 4",
-        default="4")
-    parser.add_argument(
-        "--resolution",
-        help="camera resolution, defaults 640x480",
-        default="640x480")
-    parser.add_argument(
-        "--framerate",
-        help="framerate of the camera, defaults to 20",
-        type=int,
-        default=20)
-    parser.add_argument(
-        "--buffer",
-        help="buffer size in seconds, defaults to 15",
-        type=int,
-        default=15)
-    parser.add_argument(
-        "--buffer-size",
-        help="buffer size in bytes, unset by default and uses buffer",
-        type=int,
+        "--log-level",
+        help="configured log level of the pinthesky app, default INFO",
         required=False,
-        default=None)
-    parser.add_argument(
-        "--sensitivity",
-        help="sensitivity of the motion detection math, default 10",
-        type=int,
-        default=10)
-    parser.add_argument(
-        "--event-input",
-        help="file representing external input, default input.json",
-        default="input.json")
-    parser.add_argument(
-        "--event-output",
-        help="file representing external output, default output.json",
-        default="output.json")
-    parser.add_argument(
-        "--configure-input",
-        help="file for configuration input, default config-input.json",
-        default="config-input.json")
-    parser.add_argument(
-        "--configure-output",
-        help="file for configuration output, default config-output.json",
-        default="config-output.json")
-    parser.add_argument(
-        "--thing-name",
-        help="the AWS IoT ThingName for use in upload",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--thing-cert",
-        help="the AWS IoT certificate associated to the Thing",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--thing-key",
-        help="the AWS IoT certificate pair associated to the Thing",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--ca-cert",
-        help="the root CA certificate to authenticate the certificate",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--credentials-endpoint",
-        help="the AWS IoT Credentials Provider endpoint",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--role-alias",
-        help="the AWS IoT Role Alias to pull credentials",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--bucket-name",
-        help="the S3 bucket to upload motion detection files",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--bucket-prefix",
-        help="the prefix to upload the motion files to, default motion_videos",
-        default="motion_videos")
-    parser.add_argument(
-        "--recording-window",
-        help="the recording window for the camera relative to the host time," +
-        " ie: '08-18' for a ten hour window, defaults to always recordding",
-        required=False,
-        default=None)
-    parser.add_argument(
-        "--capture-dir",
-        help="the directory to write temporary images, default capture_images",
-        default="capture_images",
-        required=False)
-    parser.add_argument(
-        "--bucket-image-prefix",
-        help="the prefix to upload the latest images, default capture_images",
-        default="capture_images",
-        required=False)
-    parser.add_argument(
-        "--cloudwatch",
-        help="enable the cloudwatch upload, default false",
-        required=False,
-        default=os.getenv("CLOUDWATCH", "false") == "true",
-        action='store_true')
-    parser.add_argument(
-        "--cloudwatch-thread",
-        action='store_true',
-        default=os.getenv("CLOUDWATCH_THREADED", "false") == "true",
-        required=False,
-        help="enable cloudwatch logs to upload in background, default false")
-    parser.add_argument(
-        "--cloudwatch-event-type",
-        default="logs",
-        required=False,
-        help="event type to upload: logs,emf,all")
-    parser.add_argument(
-        "--cloudwatch-metric-namespace",
-        required=False,
-        default="Pits/Device",
-        help="metric namespace when using emf event type, default Pits/Device")
-    parser.add_argument(
-        "--cloudwatch-log-group",
-        help="uploads to this cloudwatch log group",
-        default=None,
-        required=False)
-    parser.add_argument(
-        "--disable-cloudwatch-stream-split",
-        help="disables splitting the log stream by thing name",
-        default=os.getenv("CLOUDWATCH_DELINEATE_STREAM", "true") == "false",
-        required=False,
-        action='store_true')
-    parser.add_argument(
-        "--shadow-update",
-        help="behavior for the camera shadow document: always, never, empty",
-        default="empty",
-        required=False)
+        default='INFO')
     parser.add_argument(
         "--health-interval",
         help="seconds in which to emit health metrics, default: 3600",
         default=3600,
         type=int,
         required=False)
+    camera = parser.add_argument_group(
+        title="Camera",
+        description="Configuration for camera options"
+    )
+    camera.add_argument(
+        "--rotation",
+        help="rotate the video, valid arguments [0, 90, 180, 270]",
+        default=270,
+        type=int)
+    camera.add_argument(
+        "--encoding-bitrate",
+        help="the bitrate for the camera, default 17000000",
+        default=17000000,
+        type=int)
+    camera.add_argument(
+        "--encoding-profile",
+        help="the camera encoding profile, default high",
+        default="high")
+    camera.add_argument(
+        "--encoding-level",
+        help="the encoding level, default 4",
+        default="4")
+    camera.add_argument(
+        "--resolution",
+        help="camera resolution, defaults 640x480",
+        default="640x480")
+    camera.add_argument(
+        "--framerate",
+        help="framerate of the camera, defaults to 20",
+        type=int,
+        default=20)
+    camera.add_argument(
+        "--buffer",
+        help="buffer size in seconds, defaults to 15",
+        type=int,
+        default=15)
+    camera.add_argument(
+        "--buffer-size",
+        help="buffer size in bytes, unset by default and uses buffer",
+        type=int,
+        required=False,
+        default=None)
+    camera.add_argument(
+        "--sensitivity",
+        help="sensitivity of the motion detection math, default 10",
+        type=int,
+        default=10)
+    camera.add_argument(
+        "--recording-window",
+        help="the recording window for the camera relative to the host time," +
+        " ie: '08-18' for a ten hour window, defaults to always recordding",
+        required=False,
+        default=None)
+    events = parser.add_argument_group(
+        title="Events",
+        description="Configuration for reading and writing events"
+    )
+    events.add_argument(
+        "--event-input",
+        help="file representing external input, default input.json",
+        default="input.json")
+    events.add_argument(
+        "--event-output",
+        help="file representing external output, default output.json",
+        default="output.json")
+    events.add_argument(
+        "--configure-input",
+        help="file for configuration input, default config-input.json",
+        default="config-input.json")
+    events.add_argument(
+        "--configure-output",
+        help="file for configuration output, default config-output.json",
+        default="config-output.json")
+    iot = parser.add_argument_group(
+        title='AWS IoT',
+        description='Configuration for integrating with AWS IoT'
+    )
+    iot.add_argument(
+        "--thing-name",
+        help="the AWS IoT ThingName for use in upload",
+        default=None,
+        required=False)
+    iot.add_argument(
+        "--thing-cert",
+        help="the AWS IoT certificate associated to the Thing",
+        default=None,
+        required=False)
+    iot.add_argument(
+        "--thing-key",
+        help="the AWS IoT certificate pair associated to the Thing",
+        default=None,
+        required=False)
+    iot.add_argument(
+        "--ca-cert",
+        help="the root CA certificate to authenticate the certificate",
+        default=None,
+        required=False)
+    iot.add_argument(
+        "--credentials-endpoint",
+        help="the AWS IoT Credentials Provider endpoint",
+        default=None,
+        required=False)
+    iot.add_argument(
+        "--role-alias",
+        help="the AWS IoT Role Alias to pull credentials",
+        default=None,
+        required=False)
+    iot.add_argument(
+        "--shadow-update",
+        help="behavior for the camera shadow document: always, never, empty",
+        default="empty",
+        required=False)
+    storage = parser.add_argument_group(
+        title="Storage",
+        description="Configuration for remote storage",
+    )
+    storage.add_argument(
+        "--bucket-name",
+        help="the S3 bucket to upload motion detection files",
+        default=None,
+        required=False)
+    storage.add_argument(
+        "--bucket-prefix",
+        help="the prefix to upload the motion files to, default motion_videos",
+        default="motion_videos")
+    storage.add_argument(
+        "--capture-dir",
+        help="the directory to write temporary images, default capture_images",
+        default="capture_images",
+        required=False)
+    storage.add_argument(
+        "--bucket-image-prefix",
+        help="the prefix to upload the latest images, default capture_images",
+        default="capture_images",
+        required=False)
+    storage.add_argument(
+        "--combine-dir",
+        help="the directory to combine video, defaults to motion_videos",
+        default="motion_videos")
+    cloudwatch = parser.add_argument_group(
+        title="CloudWatch",
+        description="Configuration for CloudWatch logging"
+    )
+    cloudwatch.add_argument(
+        "--cloudwatch",
+        help="enable the cloudwatch upload, default false",
+        required=False,
+        default=os.getenv("CLOUDWATCH", "false") == "true",
+        action='store_true')
+    cloudwatch.add_argument(
+        "--cloudwatch-thread",
+        action='store_true',
+        default=os.getenv("CLOUDWATCH_THREADED", "false") == "true",
+        required=False,
+        help="enable cloudwatch logs to upload in background, default false")
+    cloudwatch.add_argument(
+        "--cloudwatch-event-type",
+        default="logs",
+        required=False,
+        help="event type to upload: logs,emf,all")
+    cloudwatch.add_argument(
+        "--cloudwatch-metric-namespace",
+        required=False,
+        default="Pits/Device",
+        help="metric namespace when using emf event type, default Pits/Device")
+    cloudwatch.add_argument(
+        "--cloudwatch-log-group",
+        help="uploads to this cloudwatch log group",
+        default=None,
+        required=False)
+    cloudwatch.add_argument(
+        "--disable-cloudwatch-stream-split",
+        help="disables splitting the log stream by thing name",
+        default=os.getenv("CLOUDWATCH_DELINEATE_STREAM", "true") == "false",
+        required=False,
+        action='store_true')
+    dataplane = parser.add_argument_group(
+        title="Data Plane",
+        description="Configuration for the data plane integration"
+    )
+    dataplane.add_argument(
+        "--dataplane",
+        help="enable the dataplane integration",
+        required=False,
+        default=os.getenv("DATAPLANE", "false") == "true",
+        action='store_true',
+    )
+    dataplane.add_argument(
+        "--dataplane-endpoint",
+        help="endpoint for the dataplane",
+        required=False,
+        default=None,
+    )
     return parser
 
 
@@ -212,6 +250,11 @@ def main():
         role_alias=parsed.role_alias,
         thing_name=parsed.thing_name,
         credentials_endpoint=parsed.credentials_endpoint)
+    connection_manager = ConnectionManager(
+        session=auth_session,
+        enabled=parsed.dataplane,
+        endpoint_url=parsed.dataplane_endpoint,
+    )
     video_uploader = upload.S3Upload(
         events=event_thread,
         bucket_name=parsed.bucket_name,
@@ -230,7 +273,8 @@ def main():
         encoding_profile=parsed.encoding_profile,
         recording_window=parsed.recording_window,
         capture_dir=parsed.capture_dir,
-        buffer_size=parsed.buffer_size)
+        buffer_size=parsed.buffer_size,
+        connection_manager=connection_manager)
     video_combiner = VideoCombiner(
         events=event_thread,
         combine_dir=parsed.combine_dir)
@@ -252,6 +296,7 @@ def main():
     event_thread.on(auth_session)
     event_thread.on(device_health)
     event_thread.on(cloudwatch_manager)
+    event_thread.on(connection_manager)
     shadow_update = ShadowConfig(
         events=event_thread,
         configure_input=parsed.configure_input,
@@ -262,6 +307,7 @@ def main():
     shadow_update.add_handler(device_health)
     shadow_update.add_handler(cloudwatch_manager)
     shadow_update.add_handler(video_uploader)
+    shadow_update.add_handler(connection_manager)
     # Allow adaptation before shadow document kicks in
     cloudwatch_manager.adapt_logging()
 
