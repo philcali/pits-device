@@ -121,7 +121,8 @@ class ConnectionHandler(Handler):
             )
 
     def on_record_end(self, event):
-        if 'manager_id' in event.get('connection', {}):
+        connection = event.get('connection', {})
+        if connection.get('manager_id', None) is not None:
             self.manager.post_to_connection(
                 connection_id=event['connection']['manager_id'],
                 data=json.dumps(event).encode('utf-8')

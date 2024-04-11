@@ -4,7 +4,7 @@ from pinthesky import VERSION, input, output, upload, set_stream_logger
 from pinthesky.camera import CameraThread
 from pinthesky.cloudwatch import CloudWatchManager
 from pinthesky.combiner import VideoCombiner
-from pinthesky.connection import ConnectionManager
+from pinthesky.connection import ConnectionManager, ConnectionHandler
 from pinthesky.config import ShadowConfig
 from pinthesky.events import EventThread
 from pinthesky.health import DeviceHealth
@@ -255,6 +255,7 @@ def main():
         enabled=parsed.dataplane,
         endpoint_url=parsed.dataplane_endpoint,
     )
+    connection_handler = ConnectionHandler(manager=connection_manager)
     video_uploader = upload.S3Upload(
         events=event_thread,
         bucket_name=parsed.bucket_name,
@@ -297,6 +298,7 @@ def main():
     event_thread.on(device_health)
     event_thread.on(cloudwatch_manager)
     event_thread.on(connection_manager)
+    event_thread.on(connection_handler)
     shadow_update = ShadowConfig(
         events=event_thread,
         configure_input=parsed.configure_input,
