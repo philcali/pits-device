@@ -117,6 +117,9 @@ cloudwatch:
   metric_namespace: "Pits/Device"
   log_group_name: "/pits/device/DaemonLogging"
   event_type: "logs"
+dataplane:
+  enabled: false
+  endpoint_url: ""
 device:
   paths:
     event_input: "/usr/share/pinthesky/events/input.json"
@@ -364,6 +367,45 @@ screens:
 
         Current Value: [\Zb\$state.cloud.create_certificates\ZB]'
     type: yesno
+  Data Plane Configuration:
+    back: Install Menu
+    clear_history: true
+    dialog:
+      cancel-label: Back
+      ok-label: Configure
+    handlers:
+      ok: wheel::screens::hub::selection
+    properties:
+      items:
+      - description: Enables the Data Plane integration
+        configures: dataplane.enabled
+        name: Enable Data Plane
+      - description: Data Plane Endpoint URL
+        depends: dataplane.enabled
+        name: Data Plane Endpoint
+    type: hub
+  Enable Data Plane:
+    capture_into: dataplane.enabled
+    handlers:
+      cancel:
+      - wheel::handlers::flag
+      - wheel::handlers::cancel
+      capture_into: wheel::handlers::flag
+      ok: wheel::handlers::cancel
+    next: Data Plane Configuration
+    properties:
+      text: 'Enable the Data Plane integration?
+
+        Current Value: [\Zb\$state.dataplane.enabled\ZB]'
+    type: yesno
+  Data Plane Endpoint:
+    capture_into: dataplane.endpoint_url
+    properties:
+      width: 70
+      height: 7
+      text: Data Plane Endpoint
+    next: Data Plane Configuration
+    type: input
   Device Client:
     capture_into: client
     handlers:
@@ -559,6 +601,8 @@ screens:
         depends: previous.overwrite
       - description: Configures CloudWatch logging and metrics
         name: CloudWatch Configuration
+      - description: Configures the Data Plane integration
+        name: Data Plane Configuration
       - description: Installs and configures AWS IoT device client
         name: Device Client
       - description: Installs and configures systemd services

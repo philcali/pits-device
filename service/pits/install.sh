@@ -76,6 +76,8 @@ function pits::setup::install::load_previous() {
             [ -n "$CLOUDWATCH_DELINEATE_STREAM" ] && [ "$CLOUDWATCH_DELINEATE_STREAM" = "false" ] && wheel::state::set "cloudwatch.delineated_stream" "false" argjson
             [ -n "$CLOUDWATCH_LOG_GROUP" ] && wheel::state::set "cloudwatch.log_group_name" "$CLOUDWATCH_LOG_GROUP"
             [ -n "$CLOUDWATCH_EVENT_TYPE" ] && wheel::state::set "cloudwatch.event_type" "$CLOUDWATCH_EVENT_TYPE"
+            [ -n "$DATAPLANE" ] && [ "$DATAPLANE" = "true" ] && wheel::state::set "dataplane.enabled" "true" argjson
+            [ -n "$DATAPLANE_ENDPOINT" ] && wheel::state::set "dataplane.endpoint_url" "$DATAPLANE_ENDPOINT"
             wheel::state::set "software.install" "Nothing"
             wheel::state::set "client.install_software" "false" argjson
             wheel::state::set "client.install_service" "false" argjson
@@ -92,6 +94,13 @@ function pits::setup::install::load_previous() {
     echo "XXX"
 }
 
+function pits::setup::install::strip_env_namespace() {
+    local namespace=$1
+    cat "$PITS_ENV" | grep -v "$namespace" > "$PITS_ENV.tmp"
+    cp "$PITS_ENV.tmp" "$PITS_ENV"
+    rm -rf "$PITS_ENV.tmp"
+}
+
 function pits::setup::install::device() {
     pits::setup::truncate "$INSTALL_LOG" || return 254
     local task_index
@@ -106,9 +115,15 @@ function pits::setup::install::device() {
         install_tasks+=(pinthesky_storage)
         install_tasks+=(pinthesky_cloud)
         install_tasks+=(pinthesky_config)
+        for namespace in DATAPLANE CLOUDWATCH; do
+            pits::setup::install::strip_env_namespace "$namespace"
+        done
     fi
     if [ "$(wheel::state::get "cloudwatch.enabled")" = "true" ]; then
         install_tasks+=(pinthesky_cloudwatch)
+    fi
+    if [ "$(wheel::state::get "dataplane.enabled")" = "true" ]; then
+        install_tasks+=(pinthesky_dataplane)
     fi
     # Will either copy over the existing env or modified via cloudwatch
     install_tasks+=(pinthesky_env)
@@ -126,13 +141,21 @@ function pits::setup::install::device() {
     wheel::screens::gauge
 }
 
+function pits::setup::install::pinthesky_dataplane() {
+    pits::setup::install::strip_env_namespace "DATAPLANE"
+    # Drop all configuration in the env file for pitscl management
+    {
+        echo "DATAPLANE=true"
+        echo "DATAPLANE_ENDPOINT=$(wheel::state::get "dataplane.endpoint_url")"
+    } >> "$PITS_ENV"
+    echo "[+] Data Plane integration configured" >> "$INSTALL_LOG"
+}
+
 function pits::setup::install::pinthesky_cloudwatch() {
     local log_group_name
     local existing_group_name
     # Strip Cloudwatch config, since we're overwriting it
-    cat "$PITS_ENV" | grep -v "CLOUDWATCH" > "$PITS_ENV.tmp"
-    cp "$PITS_ENV.tmp" "$PITS_ENV"
-    rm -rf "$PITS_ENV.tmp"
+    pits::setup::install::strip_env_namespace "CLOUDWATCH"
     log_group_name=$(wheel::state::get "cloudwatch.log_group_name") || return 254
     existing_group_name=$(aws logs describe-log-groups \
         --log-group-name-prefix "$log_group_name" | jq -r ".logGroups[] | select(.logGroupName == \"$log_group_name\")") || {
@@ -671,11 +694,17 @@ function pits::setup::install::pinthesky_camera() {
 }
 
 function pits::setup::install::pinthesky_service() {
-    local cloudwatch=""
+    local extra_flags=""
     if [ "$(wheel::state::get "cloudwatch.enabled")" = "true" ]; then
-        cloudwatch="--cloudwatch"
-        [ "$(wheel::state::get "cloudwatch.threaded")" = "true" ] && cloudwatch+=" --cloudwatch-threaded"
-        [ "$(wheel::state::get "cloudwatch.delineated_stream")" = "false" ] && cloudwatch+=" --disable-cloudwatch-stream-split"
+        extra_flags="--cloudwatch"
+        [ "$(wheel::state::get "cloudwatch.threaded")" = "true" ] && extra_flags+=" --cloudwatch-threaded"
+        [ "$(wheel::state::get "cloudwatch.delineated_stream")" = "false" ] && extra_flags+=" --disable-cloudwatch-stream-split"
+    fi
+    if [ "$(wheel::state::get "dataplane.enabled")" = "true" ]; then
+        extra_flags+=" --dataplane"
+        if [ -z "$(wheel::state::get "dataplane.endpoint_url")" ]; then
+            extra_flags+=" --dataplane-endpoint $(wheel::state::get "dataplane.endpoint_url")"
+        fi
     fi
     cat << EOF > pinthesky.service
 [Unit]
@@ -717,7 +746,7 @@ ExecStart=/usr/local/bin/pinthesky \
     --health-interval \$HEALTH_INTERVAL \
     --cloudwatch-log-group \$CLOUDWATCH_LOG_GROUP \
     --cloudwatch-metric-namespace \$CLOUDWATCH_METRIC_NAMESPACE \
-    --cloudwatch-event-type \$CLOUDWATCH_EVENT_TYPE $cloudwatch
+    --cloudwatch-event-type \$CLOUDWATCH_EVENT_TYPE $extra_flags
 Restart=always
 EOF
 
