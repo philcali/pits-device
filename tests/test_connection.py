@@ -231,10 +231,12 @@ def test_connection_handler():
         def post_to_connection(connection_id, data):
             assert connection_id == "$connectionId" if event != 'record' else "$managerId"
             assert json.loads(data.decode('utf-8')) == {
-                'name': event,
-                'connection': {
-                    'id': '$connectionId',
-                    'manager_id': '$managerId',
+                'invoke': {
+                    'name': event,
+                    'connection': {
+                        'id': '$connectionId',
+                        'manager_id': '$managerId',
+                    }
                 }
             }
 

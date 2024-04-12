@@ -121,7 +121,7 @@ class ConnectionHandler(Handler):
         if 'id' in event.get('connection', {}):
             self.manager.post_to_connection(
                 connection_id=event['connection']['id'],
-                data=json.dumps(event).encode('utf-8')
+                data=json.dumps({'invoke':{**event}}).encode('utf-8')
             )
 
     def on_record_end(self, event):
@@ -129,7 +129,7 @@ class ConnectionHandler(Handler):
         if connection.get('manager_id', None) is not None:
             self.manager.post_to_connection(
                 connection_id=event['connection']['manager_id'],
-                data=json.dumps(event).encode('utf-8')
+                data=json.dumps({'invoke':{**event}}).encode('utf-8')
             )
 
     def on_configuration_end(self, event):

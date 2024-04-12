@@ -135,6 +135,8 @@ delineate the stream by `thing_name`. To disable this behavior, use
 
 ```
   --cloudwatch          enable the cloudwatch upload, default false
+  --cloudwatch-region CLOUDWATCH_REGION
+                        the AWS region name override for CloudWatch
   --cloudwatch-thread   enable cloudwatch logs to upload in background, default false
   --cloudwatch-event-type CLOUDWATCH_EVENT_TYPE
                         event type to upload: logs,emf,all
