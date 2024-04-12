@@ -71,7 +71,8 @@ def test_cloudwatch_manager():
                             'metric_namespace': 'Pits/Devices',
                             'log_level': 'FARTS',
                             'delineate_stream': True,
-                            'event_type': 'all'
+                            'event_type': 'all',
+                            'region_name': 'us-east-2',
                         }
                     }
                 }
@@ -92,6 +93,7 @@ def test_cloudwatch_manager():
         'event_type': 'all',
         'log_level': 'INFO',
         'log_group_name': None,
+        'region_name': 'us-east-2',
     })
 
     events.fire_event('file_change', {
@@ -106,7 +108,8 @@ def test_cloudwatch_manager():
                             'metric_namespace': 'Pits/Devices',
                             'log_level': 'FARTS',
                             'delineate_stream': True,
-                            'event_type': 'all'
+                            'event_type': 'all',
+                            'region_name': None,
                         }
                     }
                 }

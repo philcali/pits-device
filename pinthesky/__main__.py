@@ -35,8 +35,7 @@ def create_parser():
         required=False)
     camera = parser.add_argument_group(
         title="Camera",
-        description="Configuration for camera options"
-    )
+        description="Configuration for camera options")
     camera.add_argument(
         "--rotation",
         help="rotate the video, valid arguments [0, 90, 180, 270]",
@@ -88,8 +87,7 @@ def create_parser():
         default=None)
     events = parser.add_argument_group(
         title="Events",
-        description="Configuration for reading and writing events"
-    )
+        description="Configuration for reading and writing events")
     events.add_argument(
         "--event-input",
         help="file representing external input, default input.json",
@@ -108,8 +106,7 @@ def create_parser():
         default="config-output.json")
     iot = parser.add_argument_group(
         title='AWS IoT',
-        description='Configuration for integrating with AWS IoT'
-    )
+        description='Configuration for integrating with AWS IoT')
     iot.add_argument(
         "--thing-name",
         help="the AWS IoT ThingName for use in upload",
@@ -147,8 +144,7 @@ def create_parser():
         required=False)
     storage = parser.add_argument_group(
         title="Storage",
-        description="Configuration for remote storage",
-    )
+        description="Configuration for remote storage")
     storage.add_argument(
         "--bucket-name",
         help="the S3 bucket to upload motion detection files",
@@ -174,14 +170,18 @@ def create_parser():
         default="motion_videos")
     cloudwatch = parser.add_argument_group(
         title="CloudWatch",
-        description="Configuration for CloudWatch logging"
-    )
+        description="Configuration for CloudWatch logging")
     cloudwatch.add_argument(
         "--cloudwatch",
         help="enable the cloudwatch upload, default false",
         required=False,
         default=os.getenv("CLOUDWATCH", "false") == "true",
         action='store_true')
+    cloudwatch.add_argument(
+        "--cloudwatch-region",
+        help="the AWS region name override for CloudWatch",
+        default=os.getenv("AWS_DEFAULT_REGION", None),
+        required=False)
     cloudwatch.add_argument(
         "--cloudwatch-thread",
         action='store_true',
@@ -211,21 +211,23 @@ def create_parser():
         action='store_true')
     dataplane = parser.add_argument_group(
         title="Data Plane",
-        description="Configuration for the data plane integration"
-    )
+        description="Configuration for the data plane integration")
     dataplane.add_argument(
         "--dataplane",
         help="enable the dataplane integration",
         required=False,
         default=os.getenv("DATAPLANE", "false") == "true",
-        action='store_true',
-    )
+        action='store_true')
     dataplane.add_argument(
         "--dataplane-endpoint",
         help="endpoint for the dataplane",
         required=False,
-        default=None,
-    )
+        default=None)
+    dataplane.add_argument(
+        "--dataplane-region",
+        help="the AWS region name override for the Data Plane",
+        required=False,
+        default=os.getenv("AWS_DEFAULT_REGION", None))
     return parser
 
 
@@ -254,7 +256,7 @@ def main():
         session=auth_session,
         enabled=parsed.dataplane,
         endpoint_url=parsed.dataplane_endpoint,
-    )
+        region_name=parsed.dataplane_region)
     connection_handler = ConnectionHandler(manager=connection_manager)
     video_uploader = upload.S3Upload(
         events=event_thread,
@@ -288,7 +290,8 @@ def main():
         enabled=parsed.cloudwatch,
         log_group_name=parsed.cloudwatch_log_group,
         namespace=parsed.cloudwatch_metric_namespace,
-        event_type=parsed.cloudwatch_event_type)
+        event_type=parsed.cloudwatch_event_type,
+        region_name=parsed.cloudwatch_region)
     event_thread.on(camera_thread)
     event_thread.on(video_combiner)
     event_thread.on(video_uploader)

@@ -138,7 +138,7 @@ class DeviceHealth(Handler, ShadowConfigHandler):
     def on_recording_change(self, event):
         self.recording_status = event["recording"]
 
-    def __flush_metrics(self):
+    def __flush_metrics(self, parent_event={}):
         p_vs = sys.version_info
         context = {
             'version': VERSION,
@@ -148,7 +148,10 @@ class DeviceHealth(Handler, ShadowConfigHandler):
         }
         for metric in self.metrics:
             context = dict(context, **metric.report())
-        self.events.fire_event('health_end', context)
+        self.events.fire_event('health_end', {
+            **parent_event,
+            **context,
+        })
         self.last_flush_time = datetime.utcnow()
         logger.debug('Emitted health metric data')
         return context
@@ -163,4 +166,4 @@ class DeviceHealth(Handler, ShadowConfigHandler):
 
     def on_health(self, event):
         with self.emit_health_lock:
-            self.__flush_metrics()
+            self.__flush_metrics(event)
