@@ -27,7 +27,8 @@ class CloudWatchManager(Handler, ShadowConfigHandler):
             delineate_stream=True,
             threaded=False,
             namespace='Pits/Device',
-            event_type='logs'):
+            event_type='logs',
+            region_name=None):
         self.session = session
         self.log_group_name = log_group_name
         self.log_level = log_level
@@ -36,6 +37,7 @@ class CloudWatchManager(Handler, ShadowConfigHandler):
         self.namespace = namespace
         self.threaded = threaded
         self.event_type = event_type
+        self.region_name = region_name
         self.event_handler = None
         self.log_handler = None
         self.log_thread = None
@@ -57,7 +59,8 @@ class CloudWatchManager(Handler, ShadowConfigHandler):
                 delineate_stream=self.delineate_stream,
                 enabled=self.enabled,
                 log_group_name=self.log_group_name,
-                session=self.session)
+                session=self.session,
+                region_name=self.region_name)
             # Create handler that writes logs to CW
             if self.log_handler is not None:
                 root.removeHandler(self.log_handler)
@@ -105,6 +108,7 @@ class CloudWatchManager(Handler, ShadowConfigHandler):
             'metric_namespace': self.namespace,
             'log_level': logging.getLevelName(self.log_level),
             'event_type': self.event_type,
+            'region_name': self.region_name,
         })
 
     def on_file_change(self, event):
@@ -118,6 +122,7 @@ class CloudWatchManager(Handler, ShadowConfigHandler):
             self.namespace = cloudwatch.get("metric_namespace", self.namespace)
             self.event_type = cloudwatch.get("event_type", self.event_type)
             self.log_level = cloudwatch.get("log_level", self.log_level)
+            self.region_name = cloudwatch.get("region_name", self.region_name)
             self.adapt_logging()
 
     def stop(self):
@@ -141,12 +146,14 @@ class CloudWatchLoggingStream():
             session=None,
             log_group_name=None,
             enabled=False,
-            delineate_stream=True):
+            delineate_stream=True,
+            region_name=None):
         self.session = session
         self.log_group_name = log_group_name
         self.log_stream_name = None
         self.enabled = enabled
         self.delineate_stream = delineate_stream
+        self.region_name = region_name
 
     def _log_stream_name(self, now, cloudwatch):
         month = f'0{now.month}' if now.month < 10 else now.month
@@ -178,7 +185,7 @@ class CloudWatchLoggingStream():
             credentials['accessKeyId'],
             credentials['secretAccessKey'],
             credentials['sessionToken'])
-        cloudwatch = session.client('logs')
+        cloudwatch = session.client('logs', region_name=self.region_name)
         log_stream_name = self._log_stream_name(now, cloudwatch)
         cloudwatch.put_log_events(
             logGroupName=self.log_group_name,

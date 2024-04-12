@@ -98,7 +98,8 @@ def test_connection_manager_no_url():
 
     assert manager.update_document() == ConfigUpdate("dataplane", {
         'enabled': False,
-        'endpoint_url': None
+        'endpoint_url': None,
+        'region_name': None,
     })
 
     management = MagicMock()
@@ -113,7 +114,8 @@ def test_connection_manager_no_url():
                     'desired': {
                         'dataplane': {
                             'enabled': True,
-                            'endpoint_url': 'http://example.com'
+                            'endpoint_url': 'http://example.com',
+                            'region_name': 'us-east-2',
                         }
                     }
                 }
@@ -123,7 +125,8 @@ def test_connection_manager_no_url():
 
     assert manager.update_document() == ConfigUpdate("dataplane", {
         'enabled': True,
-        'endpoint_url': 'http://example.com'
+        'endpoint_url': 'http://example.com',
+        'region_name': 'us-east-2',
     })
 
 

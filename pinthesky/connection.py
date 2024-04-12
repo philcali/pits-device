@@ -65,15 +65,17 @@ class ConnectionThread(Thread):
 
 
 class ConnectionManager(ShadowConfigHandler, Handler):
-    def __init__(self, session, enabled=False, endpoint_url=None) -> None:
+    def __init__(self, session, enabled=False, endpoint_url=None, region_name=None) -> None:
         self.session = session
         self.endpoint_url = endpoint_url
         self.enabled = enabled
+        self.region_name = region_name
 
     def update_document(self) -> ConfigUpdate:
         return ConfigUpdate("dataplane", {
             'enabled': self.enabled,
             'endpoint_url': self.endpoint_url,
+            'region_name': self.region_name,
         })
 
     def on_file_change(self, event):
@@ -82,6 +84,7 @@ class ConnectionManager(ShadowConfigHandler, Handler):
             dataplane = desired.get("dataplane", {})
             self.enabled = dataplane.get("enabled", self.enabled)
             self.endpoint_url = dataplane.get("endpoint_url", self.endpoint_url)
+            self.region_name = dataplane.get("region_name", self.region_name)
 
     def post_to_connection(self, connection_id, data):
         if not self.enabled or self.endpoint_url is None:
@@ -96,7 +99,8 @@ class ConnectionManager(ShadowConfigHandler, Handler):
         )
         management = session.client(
             'apigatewaymanagementapi',
-            endpoint_url=self.endpoint_url
+            endpoint_url=self.endpoint_url,
+            region_name=self.region_name,
         )
         try:
             management.post_to_connection(

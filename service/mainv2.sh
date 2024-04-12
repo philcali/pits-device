@@ -117,9 +117,11 @@ cloudwatch:
   metric_namespace: "Pits/Device"
   log_group_name: "/pits/device/DaemonLogging"
   event_type: "logs"
+  region_name: "$(aws configure get region)"
 dataplane:
   enabled: false
   endpoint_url: ""
+  region_name: "$(aws configure get region)"
 device:
   paths:
     event_input: "/usr/share/pinthesky/events/input.json"
@@ -383,6 +385,9 @@ screens:
       - description: Data Plane Endpoint URL
         depends: dataplane.enabled
         name: Data Plane Endpoint
+      - description: Data Plane AWS Signing Region
+        depends: dataplane.enabled
+        name: Data Plane AWS Region
     type: hub
   Enable Data Plane:
     capture_into: dataplane.enabled
@@ -638,6 +643,9 @@ screens:
       - description: CloudWatch log event style
         name: CloudWatch Event Type
         depends: cloudwatch.enabled
+      - description: AWS region for the CloudWatch integration
+        name: CloudWatch AWS Region
+        depends: cloudwatch.enabled
     type: hub
   Enable CloudWatch:
     capture_into: cloudwatch.enabled
@@ -746,6 +754,24 @@ screens:
       - description: Configure command execution settings
         name: Command Settings
     type: hub
+  CloudWatch AWS Region:
+    capture_into: cloudwatch.region_name
+    handlers:
+      capture_into: wheel::handlers::capture_into
+      ok: wheel::handlers::cancel
+    properties:
+      text: Select the AWS SDK region
+    type: custom
+    entrypoint: pits::setup::install::selectable_regions
+  Data Plane AWS Region:
+    capture_into: dataplane.region_name
+    handlers:
+      capture_into: wheel::handlers::capture_into
+      ok: wheel::handlers::cancel
+    properties:
+      text: Select the AWS SDK region
+    type: custom
+    entrypoint: pits::setup::install::selectable_regions
   Recording Window:
     capture_into: camera.recording_window
     handlers:

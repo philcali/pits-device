@@ -76,8 +76,10 @@ function pits::setup::install::load_previous() {
             [ -n "$CLOUDWATCH_DELINEATE_STREAM" ] && [ "$CLOUDWATCH_DELINEATE_STREAM" = "false" ] && wheel::state::set "cloudwatch.delineated_stream" "false" argjson
             [ -n "$CLOUDWATCH_LOG_GROUP" ] && wheel::state::set "cloudwatch.log_group_name" "$CLOUDWATCH_LOG_GROUP"
             [ -n "$CLOUDWATCH_EVENT_TYPE" ] && wheel::state::set "cloudwatch.event_type" "$CLOUDWATCH_EVENT_TYPE"
+            [ -n "$CLOUDWATCH_REGION" ] && wheel::state::set "cloudwatch.region_name" "$CLOUDWATCH_REGION"
             [ -n "$DATAPLANE" ] && [ "$DATAPLANE" = "true" ] && wheel::state::set "dataplane.enabled" "true" argjson
             [ -n "$DATAPLANE_ENDPOINT" ] && wheel::state::set "dataplane.endpoint_url" "$DATAPLANE_ENDPOINT"
+            [ -n "$DATAPLANE_REGION" ] && wheel::state::set "dataplane.region_name" "$DATAPLANE_REGION"
             wheel::state::set "software.install" "Nothing"
             wheel::state::set "client.install_software" "false" argjson
             wheel::state::set "client.install_service" "false" argjson
@@ -147,6 +149,7 @@ function pits::setup::install::pinthesky_dataplane() {
     {
         echo "DATAPLANE=true"
         echo "DATAPLANE_ENDPOINT=$(wheel::state::get "dataplane.endpoint_url")"
+        echo "DATAPLANE_REGION=$(wheel::state::get "dataplane.region_name")"
     } >> "$PITS_ENV"
     echo "[+] Data Plane integration configured" >> "$INSTALL_LOG"
 }
@@ -154,16 +157,18 @@ function pits::setup::install::pinthesky_dataplane() {
 function pits::setup::install::pinthesky_cloudwatch() {
     local log_group_name
     local existing_group_name
+    local cloudwatch_region
     # Strip Cloudwatch config, since we're overwriting it
     pits::setup::install::strip_env_namespace "CLOUDWATCH"
     log_group_name=$(wheel::state::get "cloudwatch.log_group_name") || return 254
-    existing_group_name=$(aws logs describe-log-groups \
+    cloudwatch_region=$(wheel::state::get "cloudwatch.region_name") || return 254
+    existing_group_name=$(aws --region "$cloudwatch_region" logs describe-log-groups \
         --log-group-name-prefix "$log_group_name" | jq -r ".logGroups[] | select(.logGroupName == \"$log_group_name\")") || {
             echo "[-] Failed to describe existing log groups" >> "$INSTALL_LOG"
             return 254
         }
     [ -z "$existing_group_name" ] && {
-        aws logs create-log-group --log-group-name "$log_group_name" || {
+        aws --region "$cloudwatch_region" logs create-log-group --log-group-name "$log_group_name" || {
             echo "[-] Failed to create log group $log_group_name" >> "$INSTALL_LOG"
             return 254
         }
@@ -175,7 +180,8 @@ function pits::setup::install::pinthesky_cloudwatch() {
         echo "CLOUDWATCH_DELINEATE_STREAM=$(wheel::state::get "cloudwatch.delineated_stream")"
         echo "CLOUDWATCH_LOG_GROUP=$log_group_name"
         echo "CLOUDWATCH_EVENT_TYPE=$(wheel::state::get "cloudwatch.event_type")"
-        echp "CLOUDWATCH_METRIC_NAMESPACE=$(wheel::state::get "cloudwatch.metric_namespace")"
+        echo "CLOUDWATCH_METRIC_NAMESPACE=$(wheel::state::get "cloudwatch.metric_namespace")"
+        echo "CLOUDWATCH_REGION=$cloudwatch_region"
     } >> "$PITS_ENV"
     echo "[+] CloudWatch integration configured" >> "$INSTALL_LOG"
 }
@@ -203,6 +209,7 @@ function pits::setup::install::pinthesky_config() {
     {
         echo "HEALTH_INTERVAL=$(wheel::state::get "device.health_interval")"
         echo "LOG_LEVEL=$(wheel::state::get "device.log_level")"
+        echo "AWS_DEFAULT_REGION=$(aws configure get region)"
         # TODO: make a form for this
         echo "SHADOW_UPDATE=empty"
     } >> "$PITS_ENV"
@@ -362,6 +369,14 @@ function pits::setup::install::pinthesky_software() {
             echo "[+] Already installed pinthesky"
         fi
     } >> "$INSTALL_LOG"
+}
+
+function pits::setup::install::selectable_regions() {
+    screen=$(wheel::json::set \
+        "$screen" "properties.items" \
+        "$(aws ssm get-parameters-by-path --path /aws/service/global-infrastructure/regions | jq '[{"name": .Parameters[].Value}]')")
+
+    wheel::screens::radiolist
 }
 
 function pits::setup::install::create_policy() {
