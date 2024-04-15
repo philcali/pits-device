@@ -2,7 +2,7 @@ import boto3
 import json
 from botocore.exceptions import ClientError
 from functools import partial
-from pinthesky.connection import ConnectionThread, ConnectionHandler, ConnectionManager, ProcessBuffer
+from pinthesky.connection import ConnectionThread, ConnectionHandler, ConnectionManager, ProcessBuffer, ProtocolData
 from pinthesky.config import ConfigUpdate
 from pinthesky.events import EventThread
 from unittest.mock import patch, MagicMock
@@ -249,3 +249,24 @@ def test_connection_handler():
                 'manager_id': '$managerId',
             }
         })
+
+
+def test_protocol_data():
+    manager = MagicMock()
+    data = ProtocolData(
+        manager=manager,
+        event_data={
+            'connection': {
+                'id': 'test',
+            }
+        }
+    )
+
+    def post_to_connection(connection_id, data):
+        assert connection_id == 'test'
+        assert data is None
+        return True
+
+    manager.post_to_connection = post_to_connection
+
+    assert data.send()

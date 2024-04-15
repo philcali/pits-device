@@ -12,6 +12,21 @@ FRAME_SIZE = 32768
 logger = logging.getLogger(__name__)
 
 
+class ProtocolData():
+    def __init__(self, manager, event_data) -> None:
+        self.manager = manager
+        self.event_data = event_data
+
+    def protocol(self):
+        pass
+
+    def send(self):
+        return self.manager.post_to_connection(
+            connection_id=self.event_data['connection']['id'],
+            data=self.protocol(),
+        )
+
+
 class ConnectionBuffer():
     def close(self):
         pass
