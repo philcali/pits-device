@@ -2,7 +2,7 @@ from datetime import datetime
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 from pinthesky.health import DeviceHealth
-from pinthesky.conversion import VideoConversion
+from pinthesky.conversion import VideoConversion, JSMPEGHeader
 from pinthesky.connection import ProcessBuffer, ConnectionThread
 import logging
 import time
@@ -264,6 +264,9 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
 
     def record(self, event):
         if not self.camera.recording:
+            # Recording event was initated with a valid session connection
+            # Pump the magic header into the connection for streaming
+            JSMPEGHeader(self.connection_manager, event, self.camera).send()
             conversion = VideoConversion(self.camera)
             self.recording_thread = ConnectionThread(
                 buffer=ProcessBuffer(conversion.process),

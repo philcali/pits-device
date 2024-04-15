@@ -1,6 +1,22 @@
 import io
 import os
 from subprocess import Popen, PIPE
+from pinthesky.connection import ProtocolData
+from struct import Struct
+
+
+JSMPEG_MAGIC = b'jsmp'
+JSMPEG_HEADER = Struct('>4sHH')
+
+
+class JSMPEGHeader(ProtocolData):
+    def __init__(self, manager, event_data, camera) -> None:
+        super().__init__(manager, event_data)
+        self.camera = camera
+
+    def protocol(self):
+        (width, height) = self.camera.resolution
+        return JSMPEG_HEADER.pack(JSMPEG_MAGIC, width, height)
 
 
 class VideoConversion():
