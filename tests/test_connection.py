@@ -228,7 +228,7 @@ def test_connection_handler():
         method_name = f'on_{event}_end'
         method = getattr(handler, method_name)
 
-        def post_to_connection(connection_id, data):
+        def post_to_connection(connection_id, data, endpoint_override=None):
             assert connection_id == "$connectionId" if event != 'record' else "$managerId"
             assert json.loads(data.decode('utf-8')) == {
                 'invoke': {
@@ -262,7 +262,7 @@ def test_protocol_data():
         }
     )
 
-    def post_to_connection(connection_id, data):
+    def post_to_connection(connection_id, data, endpoint_override=None):
         assert connection_id == 'test'
         assert data is None
         return True
