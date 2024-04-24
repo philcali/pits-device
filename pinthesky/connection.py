@@ -101,12 +101,15 @@ class ConnectionManager(ShadowConfigHandler, Handler):
             self.endpoint_url = dataplane.get("endpoint_url", self.endpoint_url)
             self.region_name = dataplane.get("region_name", self.region_name)
 
-    def post_to_connection(self, connection_id, data):
-        if not self.enabled or self.endpoint_url is None:
-            return
+    def post_to_connection(self, connection_id, data, endpoint_override=None):
+        if not self.enabled:
+            return False
+        endpoint_url = endpoint_override if endpoint_override is not None else self.endpoint_url
+        if endpoint_url is None:
+            return False
         credentials = self.session.login()
         if credentials is None:
-            return
+            return False
         session = boto3.Session(
             aws_access_key_id=credentials['accessKeyId'],
             aws_secret_access_key=credentials['secretAccessKey'],
@@ -114,7 +117,7 @@ class ConnectionManager(ShadowConfigHandler, Handler):
         )
         management = session.client(
             'apigatewaymanagementapi',
-            endpoint_url=self.endpoint_url,
+            endpoint_url=endpoint_url,
             region_name=self.region_name,
         )
         try:
@@ -136,7 +139,8 @@ class ConnectionHandler(Handler):
         if 'id' in event.get('connection', {}):
             self.manager.post_to_connection(
                 connection_id=event['connection']['id'],
-                data=json.dumps({'invoke':{**event}}).encode('utf-8')
+                data=json.dumps({'invoke': {**event}}).encode('utf-8'),
+                endpoint_override=event['connection'].get('management_endpoint'),
             )
 
     def on_record_end(self, event):
@@ -144,7 +148,8 @@ class ConnectionHandler(Handler):
         if connection.get('manager_id', None) is not None:
             self.manager.post_to_connection(
                 connection_id=event['connection']['manager_id'],
-                data=json.dumps({'invoke':{**event}}).encode('utf-8')
+                data=json.dumps({'invoke': {**event}}).encode('utf-8'),
+                endpoint_override=event['connection'].get('management_endpoint'),
             )
 
     def on_configuration_end(self, event):
