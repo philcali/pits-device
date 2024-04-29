@@ -21,7 +21,6 @@ class JSMPEGHeader(ProtocolData):
 
 class VideoConversion():
     def __init__(self, camera) -> None:
-        self.camera = camera
         self.process = Popen([
             'ffmpeg',
             '-f', 'rawvideo',

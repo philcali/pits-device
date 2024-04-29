@@ -70,6 +70,7 @@ class ConnectionThread(Thread):
                 elif self.buffer.poll() is not None:
                     break
         finally:
+            logger.info('Recording on camera has ended')
             self.buffer.close()
             self.events.fire_event('record_end', {
                 **self.event_data,
@@ -125,6 +126,7 @@ class ConnectionManager(ShadowConfigHandler, Handler):
                 ConnectionId=connection_id,
                 Data=data
             )
+            logger.info(f'Send data to {connection_id} on {endpoint_url}')
         except ClientError as e:
             logger.error(f'Failed to post to {connection_id}: {e}', exc_info=e)
             return False
