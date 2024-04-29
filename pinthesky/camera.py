@@ -120,8 +120,6 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                 self.record(event)
             elif event['session']['stop']:
                 self.pause()
-                self.recording_thread.join()
-                self.recording_thread = None
 
     def on_motion_start(self, event):
         self.__flush_start('motion', event)
@@ -238,6 +236,9 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
     def pause(self):
         if self.camera.recording:
             self.camera.stop_recording()
+            if self.recording_thread is not None:
+                self.recording_thread.join()
+                self.recording_thread = None
             logger.info("Camera recording is now paused")
             self.events.fire_event('recording_change', {
                 'recording': False
