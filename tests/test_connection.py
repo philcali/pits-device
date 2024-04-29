@@ -43,6 +43,7 @@ def test_connection_thread():
     events.on(handler)
     events.start()
     connection_thread.start()
+    connection_thread.join()
     events.event_queue.join()
     assert handler.calls['record_end'] == 1
     manager.post_to_connection.assert_not_called()
@@ -85,6 +86,7 @@ def test_connection_thread_manager_failed():
     events.on(handler)
     events.start()
     connection_thread.start()
+    connection_thread.join()
     events.event_queue.join()
     assert handler.calls['record_end'] == 1
 

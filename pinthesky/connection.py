@@ -70,7 +70,7 @@ class ConnectionThread(Thread):
                 elif self.buffer.poll() is not None:
                     break
         finally:
-            logger.info(f'Recording on camera has ended')
+            logger.info('Recording on camera has ended')
             self.buffer.close()
             self.events.fire_event('record_end', {
                 **self.event_data,
