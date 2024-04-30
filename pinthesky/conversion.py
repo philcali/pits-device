@@ -23,7 +23,7 @@ class JSMPEGHeader(ProtocolData):
         return JSMPEG_HEADER.pack(JSMPEG_MAGIC, width, height)
 
 
-class VideoConversion(object):
+class VideoConversion():
     def __init__(self, camera) -> None:
         self.process = Popen([
             'ffmpeg',
