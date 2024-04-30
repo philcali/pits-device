@@ -61,6 +61,7 @@ class ConnectionThread(Thread):
         self.events = events
 
     def run(self):
+        logger.info('Starting connection background thread')
         try:
             while True:
                 buf = self.buffer.read1(FRAME_SIZE)

@@ -1,8 +1,12 @@
 import io
+import logging
 import os
 from subprocess import Popen, PIPE
 from pinthesky.connection import ProtocolData
 from struct import Struct
+
+
+logger = logging.getLogger(__name__)
 
 
 JSMPEG_MAGIC = b'jsmp'
@@ -34,10 +38,12 @@ class VideoConversion():
             '-'],
             stdin=PIPE, stdout=PIPE, stderr=io.open(os.devnull, 'wb'),
             shell=False, close_fds=True)
+        logger.info('Started ffmpeg conversion process')
 
     def write(self, b):
         self.process.stdin.write(b)
 
     def flush(self):
+        logger.info('Closing ffmpeg conversion process')
         self.process.stdin.close()
         self.process.wait()
