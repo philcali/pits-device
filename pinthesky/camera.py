@@ -216,7 +216,6 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
 
     def run(self):
         logger.info('Starting camera thread')
-        self.resume()
         while self.running:
             self.device_health.emit_health(force=False)
             # Configuration lock will prevent a race on "resume" from update
@@ -249,13 +248,8 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
     def resume(self):
         if not self.camera.recording:
             self.historical_stream = self.__new_stream_buffer()
-            self.camera.start_recording(
-                self.historical_stream,
-                format='h264',
-                bitrate=self.encoding_bitrate,
-                profile=self.encoding_profile,
-                level=self.encoding_level,
-                motion_output=self.__new_motion_detect())
+            conversion = VideoConversion(self.camera)
+            self.camera.start_recording(conversion, 'yuv')
             logger.info("Camera is now recording")
             self.events.fire_event('recording_change', {
                 'recording': True
