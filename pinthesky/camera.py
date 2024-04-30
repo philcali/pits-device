@@ -271,7 +271,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             )
             self.camera.start_recording(conversion, 'yuv')
             self.recording_thread.start()
-            logger.info("Camera is now live recording")
+            logger.info("Camera is now recording")
             self.events.fire_event('recording_change', {
                 'recording': True
             })
