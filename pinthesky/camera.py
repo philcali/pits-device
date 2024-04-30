@@ -286,5 +286,5 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
 
     def stop(self):
         self.running = False
-        self.camera.stop_recording()
+        self.pause()
         self.camera.close()
