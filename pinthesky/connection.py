@@ -72,6 +72,7 @@ class ConnectionThread(Thread):
                     break
         finally:
             logger.info('Recording on camera has ended')
+            self.buffer.close()
             self.events.fire_event('record_end', {
                 **self.event_data,
                 'session': {

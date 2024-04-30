@@ -248,8 +248,13 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
     def resume(self):
         if not self.camera.recording:
             self.historical_stream = self.__new_stream_buffer()
-            conversion = VideoConversion(self.camera)
-            self.camera.start_recording(conversion, 'yuv')
+            self.camera.start_recording(
+                self.historical_stream,
+                format='h264',
+                bitrate=self.encoding_bitrate,
+                profile=self.encoding_profile,
+                level=self.encoding_level,
+                motion_output=self.__new_motion_detect())
             logger.info("Camera is now recording")
             self.events.fire_event('recording_change', {
                 'recording': True
@@ -271,7 +276,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             )
             self.camera.start_recording(conversion, 'yuv')
             self.recording_thread.start()
-            logger.info("Camera is now recording")
+            logger.info("Camera is now live recording")
             self.events.fire_event('recording_change', {
                 'recording': True
             })
