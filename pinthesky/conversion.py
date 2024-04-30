@@ -36,12 +36,12 @@ class VideoConversion():
             '-b', '800k',
             '-r', str(float(camera.framerate)),
             '-'],
-            stdin=PIPE, stdout=PIPE, stderr=io.open('/home/pi/ffmpeg.err', 'wb'),
+            stdin=PIPE, stdout=PIPE, stderr=io.open(os.devnull, 'wb'),
             shell=False, close_fds=True)
         logger.info('Started ffmpeg conversion process')
 
     def write(self, b):
-        logger.info(f'Data from camera: {b}')
+        logger.info(f'Data from camera')
         self.process.stdin.write(b)
 
     def flush(self):
