@@ -1,11 +1,11 @@
 import boto3
 import json
 import logging
+from base64 import b64encode
 from botocore.exceptions import ClientError
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 from threading import Thread
-from websockets.frames import Frame, OP_BINARY
 
 
 FRAME_SIZE = 32768
@@ -24,7 +24,7 @@ class ProtocolData():
     def send(self):
         return self.manager.post_to_connection(
             connection_id=self.event_data['connection']['id'],
-            data=Frame(OP_BINARY, self.protocol()).serialize(mask=True),
+            data=b64encode(self.protocol()),
         )
 
 
@@ -69,7 +69,7 @@ class ConnectionThread(Thread):
                 if buf:
                     if not self.manager.post_to_connection(
                         self.event_data['connection']['id'],
-                        Frame(OP_BINARY, buf).serialize(mask=True),
+                        b64encode(buf),
                     ):
                         break
                 elif self.buffer.poll() is not None:
@@ -131,7 +131,6 @@ class ConnectionManager(ShadowConfigHandler, Handler):
                 ConnectionId=connection_id,
                 Data=data
             )
-            logger.info(f'Send data to {connection_id} on {endpoint_url}')
         except ClientError as e:
             logger.error(f'Failed to post to {connection_id}: {e}', exc_info=e)
             return False
