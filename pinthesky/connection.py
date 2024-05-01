@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 from threading import Thread
+from websockets.frames import Frame, OP_BINARY
 
 
 FRAME_SIZE = 32768
@@ -23,7 +24,7 @@ class ProtocolData():
     def send(self):
         return self.manager.post_to_connection(
             connection_id=self.event_data['connection']['id'],
-            data=self.protocol(),
+            data=Frame(OP_BINARY, self.protocol()).serialize(mask=False),
         )
 
 
@@ -66,7 +67,10 @@ class ConnectionThread(Thread):
             while True:
                 buf = self.buffer.read1(FRAME_SIZE)
                 if buf:
-                    if not self.manager.post_to_connection(self.event_data['connection']['id'], buf):
+                    if not self.manager.post_to_connection(
+                        self.event_data['connection']['id'],
+                        Frame(OP_BINARY, buf).serialize(mask=False),
+                    ):
                         break
                 elif self.buffer.poll() is not None:
                     break

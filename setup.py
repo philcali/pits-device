@@ -33,7 +33,8 @@ setup(
         'numpy',
         'inotify-simple',
         'picamera',
-        'psutil'
+        'psutil',
+        'websockets'
     ],
     extras_require={
         'test': ['pytest', 'requests-mock']

@@ -4,3 +4,4 @@ inotify-simple
 numpy
 picamera
 psutil
+websockets

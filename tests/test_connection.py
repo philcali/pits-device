@@ -74,7 +74,7 @@ def test_connection_thread_manager_failed():
     process.stdout = stdout
 
     def read1(size):
-        return "data"
+        return b"data"
 
     def post_to_connection(connection_id, data):
         return False

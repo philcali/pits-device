@@ -41,7 +41,6 @@ class VideoConversion():
         logger.info('Started ffmpeg conversion process')
 
     def write(self, b):
-        logger.info(f'Data from camera')
         self.process.stdin.write(b)
 
     def flush(self):
