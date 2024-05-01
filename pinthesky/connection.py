@@ -24,7 +24,7 @@ class ProtocolData():
     def send(self):
         return self.manager.post_to_connection(
             connection_id=self.event_data['connection']['id'],
-            data=Frame(OP_BINARY, self.protocol()).serialize(mask=False),
+            data=Frame(OP_BINARY, self.protocol()).serialize(mask=True),
         )
 
 
@@ -69,7 +69,7 @@ class ConnectionThread(Thread):
                 if buf:
                     if not self.manager.post_to_connection(
                         self.event_data['connection']['id'],
-                        Frame(OP_BINARY, buf).serialize(mask=False),
+                        Frame(OP_BINARY, buf).serialize(mask=True),
                     ):
                         break
                 elif self.buffer.poll() is not None:
