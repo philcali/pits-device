@@ -228,13 +228,20 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                         continue
                     else:
                         self.resume()
-            self.camera.wait_recording(1)
-            if self.flushing_stream:
-                self.__flush_video()
+            try:
+                self.camera.wait_recording(1)
+                if self.flushing_stream:
+                    self.__flush_video()
+            except Exception as e:
+                logger.warning(
+                    'Camera surfaced exception on failure:',
+                    exc_info=e
+                )
 
     def pause(self):
         if self.camera.recording:
-            self.camera.stop_recording()
+            # Have to tear down camera completely to reinstall encoders
+            self.camera.close()
             if self.recording_thread is not None:
                 self.recording_thread.join()
                 self.recording_thread = None
@@ -242,6 +249,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             self.events.fire_event('recording_change', {
                 'recording': False
             })
+            self.camera = self.__new_camera()
             return True
         return False
 

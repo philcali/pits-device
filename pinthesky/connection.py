@@ -24,7 +24,8 @@ class ProtocolData():
     def send(self):
         return self.manager.post_to_connection(
             connection_id=self.event_data['connection']['id'],
-            data=b64encode(self.protocol()),
+            data=self.protocol(),
+            binary=True,
         )
 
 
@@ -68,8 +69,9 @@ class ConnectionThread(Thread):
                 buf = self.buffer.read1(FRAME_SIZE)
                 if buf:
                     if not self.manager.post_to_connection(
-                        self.event_data['connection']['id'],
-                        b64encode(buf),
+                        connection_id=self.event_data['connection']['id'],
+                        data=buf,
+                        binary=True
                     ):
                         break
                 elif self.buffer.poll() is not None:
@@ -107,7 +109,7 @@ class ConnectionManager(ShadowConfigHandler, Handler):
             self.endpoint_url = dataplane.get("endpoint_url", self.endpoint_url)
             self.region_name = dataplane.get("region_name", self.region_name)
 
-    def post_to_connection(self, connection_id, data, endpoint_override=None):
+    def post_to_connection(self, connection_id, data, endpoint_override=None, binary=False):
         if not self.enabled:
             return False
         endpoint_url = endpoint_override if endpoint_override is not None else self.endpoint_url
@@ -129,7 +131,7 @@ class ConnectionManager(ShadowConfigHandler, Handler):
         try:
             management.post_to_connection(
                 ConnectionId=connection_id,
-                Data=data
+                Data=data if not binary else b64encode(data),
             )
         except ClientError as e:
             logger.error(f'Failed to post to {connection_id}: {e}', exc_info=e)
