@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import namedtuple
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
 from pinthesky.health import DeviceHealth
@@ -10,6 +11,13 @@ import threading
 
 
 logger = logging.getLogger(__name__)
+
+
+CameraConfig = namedtuple('CameraConfig', [
+    'rotation',
+    'framerate',
+    'resolution'
+])
 
 
 class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
@@ -47,10 +55,12 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         self.encoding_bitrate = encoding_bitrate
         self.encoding_profile = encoding_profile
         self.encoding_level = encoding_level
+        self.camera_props = CameraConfig(
+            resolution=resolution,
+            rotation=rotation,
+            framerate=framerate
+        )
         self.camera = self.__new_camera()
-        self.camera.resolution = resolution
-        self.camera.framerate = framerate
-        self.camera.rotation = rotation
         self.historical_stream = self.__new_stream_buffer()
         self.recording_window = recording_window
         self.capture_dir = capture_dir
@@ -87,7 +97,33 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         if self.__camera_class is None:
             from picamera import PiCamera
             self.__camera_class = PiCamera
-        return self.__camera_class()
+        camera = self.__camera_class()
+        for prop, value in self.camera_props._asdict().items():
+            setattr(camera, prop, value)
+        return camera
+
+    def __update_fields_on(self, on_obj, cam_obj, fields):
+        self_types = {
+            "buffer": int,
+            "buffer_size": int,
+            "sensitivity": int,
+            "encoding_bitrate": int,
+            "rotation": int,
+            "framerate": int
+        }
+
+        def identity(x):
+            return x
+
+        for field in fields:
+            if field in cam_obj:
+                value = cam_obj[field]
+                value = self_types.get(field, identity)(value)
+                if field == "resolution":
+                    value = tuple(map(int, value.split("x")))
+                setattr(on_obj, field, value)
+                if field == "recording_window":
+                    self.__set_recording_window()
 
     def __flush_start(self, trigger, event):
         if not self.flushing_stream:
@@ -145,37 +181,27 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
         })
 
     def on_file_change(self, event):
-        self_types = {
-            "buffer": int,
-            "buffer_size": int,
-            "sensitivity": int,
-            "encoding_bitrate": int,
-            "rotation": int,
-            "framerate": int
-        }
-
-        def identity(x):
-            return x
-
-        def set_fields_on(cam_obj, on_obj, fields):
-            for field in fields:
-                if field in cam_obj:
-                    value = cam_obj[field]
-                    value = self_types.get(field, identity)(value)
-                    if field == "resolution":
-                        value = tuple(map(int, value.split("x")))
-                    setattr(on_obj, field, value)
-                    if field == "recording_window":
-                        self.__set_recording_window()
-
         if "current" in event["content"]:
             cam_obj = event["content"]["current"]["state"]["desired"]["camera"]
             logger.info(f'Update camera fields in {cam_obj}')
             # Hold potentially dangerous mutations if the camera is flushing
             with self.configuration_lock:
+                # Pause any active recording on config update
                 previsouly_recording = self.pause()
+                # Update picamera fields using older resident properties
+                self.__update_fields_on(
+                    on_obj=self.camera,
+                    cam_obj=cam_obj,
+                    fields=["rotation", "resolution", "framerate"],
+                )
+                # Update resident properties for dynamic pauses
+                self.camera_props = CameraConfig(
+                    rotation=self.camera.rotation,
+                    framerate=self.camera.framerate,
+                    resolution=self.camera.resolution,
+                )
                 # Update wrapper fields
-                set_fields_on(on_obj=self, cam_obj=cam_obj, fields=[
+                self.__update_fields_on(on_obj=self, cam_obj=cam_obj, fields=[
                     "buffer",
                     "buffer_size",
                     "sensitivity",
@@ -183,10 +209,6 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                     "encoding_bitrate",
                     "encoding_profile",
                     "encoding_level"
-                ])
-                # Update picamera fields
-                set_fields_on(on_obj=self.camera, cam_obj=cam_obj, fields=[
-                    "rotation", "resolution", "framerate"
                 ])
                 if previsouly_recording:
                     self.resume()
