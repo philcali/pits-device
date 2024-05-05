@@ -74,9 +74,9 @@ def test_connection_thread_manager_failed():
     process.stdout = stdout
 
     def read1(size):
-        return "data"
+        return b"data"
 
-    def post_to_connection(connection_id, data):
+    def post_to_connection(connection_id, data, binary=False):
         return False
 
     manager.post_to_connection = post_to_connection
@@ -264,9 +264,10 @@ def test_protocol_data():
         }
     )
 
-    def post_to_connection(connection_id, data, endpoint_override=None):
+    def post_to_connection(connection_id, data, endpoint_override=None, binary=False):
         assert connection_id == 'test'
         assert data is None
+        assert binary
         return True
 
     manager.post_to_connection = post_to_connection

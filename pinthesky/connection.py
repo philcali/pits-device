@@ -1,6 +1,7 @@
 import boto3
 import json
 import logging
+from base64 import b64encode
 from botocore.exceptions import ClientError
 from pinthesky.config import ConfigUpdate, ShadowConfigHandler
 from pinthesky.handler import Handler
@@ -24,6 +25,7 @@ class ProtocolData():
         return self.manager.post_to_connection(
             connection_id=self.event_data['connection']['id'],
             data=self.protocol(),
+            binary=True,
         )
 
 
@@ -66,7 +68,11 @@ class ConnectionThread(Thread):
             while True:
                 buf = self.buffer.read1(FRAME_SIZE)
                 if buf:
-                    if not self.manager.post_to_connection(self.event_data['connection']['id'], buf):
+                    if not self.manager.post_to_connection(
+                        connection_id=self.event_data['connection']['id'],
+                        data=buf,
+                        binary=True
+                    ):
                         break
                 elif self.buffer.poll() is not None:
                     break
@@ -103,7 +109,7 @@ class ConnectionManager(ShadowConfigHandler, Handler):
             self.endpoint_url = dataplane.get("endpoint_url", self.endpoint_url)
             self.region_name = dataplane.get("region_name", self.region_name)
 
-    def post_to_connection(self, connection_id, data, endpoint_override=None):
+    def post_to_connection(self, connection_id, data, endpoint_override=None, binary=False):
         if not self.enabled:
             return False
         endpoint_url = endpoint_override if endpoint_override is not None else self.endpoint_url
@@ -125,9 +131,8 @@ class ConnectionManager(ShadowConfigHandler, Handler):
         try:
             management.post_to_connection(
                 ConnectionId=connection_id,
-                Data=data
+                Data=data if not binary else b64encode(data),
             )
-            logger.info(f'Send data to {connection_id} on {endpoint_url}')
         except ClientError as e:
             logger.error(f'Failed to post to {connection_id}: {e}', exc_info=e)
             return False
