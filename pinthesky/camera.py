@@ -259,6 +259,7 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                     'Camera surfaced exception on failure:',
                     exc_info=e
                 )
+                self.pause()
 
     def pause(self):
         if self.camera.recording:
