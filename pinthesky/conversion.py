@@ -41,7 +41,8 @@ class VideoConversion():
         logger.info('Started ffmpeg conversion process')
 
     def write(self, b):
-        self.process.stdin.write(b)
+        if self.process.poll() is None:
+            self.process.stdin.write(b)
 
     def flush(self):
         logger.info('Closing ffmpeg conversion process')
