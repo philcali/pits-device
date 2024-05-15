@@ -157,6 +157,10 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
             elif event['session']['stop']:
                 self.pause()
 
+    def on_record_end(self, event):
+        with self.configuration_lock:
+            self.pause()
+
     def on_motion_start(self, event):
         self.__flush_start('motion', event)
 
