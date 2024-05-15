@@ -45,6 +45,7 @@ class INotifyThread(threading.Thread):
                     logger.debug(f'The {file_name} was zeroed out. Skipping.')
                     return
                 js = json.loads(content)
+                logger.info(f'Input data is {js}')
                 self.events.fire_event('file_change', {
                     'file_name': file_name,
                     'content': js
