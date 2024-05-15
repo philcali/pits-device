@@ -148,6 +148,21 @@ delineate the stream by `thing_name`. To disable this behavior, use
                         disables splitting the log stream by thing name
 ```
 
+The `pinthesky` daemon supports live streaming through an optional
+integration through a custom data plane deployed through [pits-data](https://github.com/philcali/pits-data). Enabling this integration
+is done through `--dataplane` and the endpoint and AWS region are
+targeted with `--dataplane-endpoint` and `--dataplane-region`,
+respectively. Note that deploying a custom data plane is managed
+with the infrastructure instructions below.
+
+```
+  --dataplane           enable the dataplane integration
+  --dataplane-endpoint DATAPLANE_ENDPOINT
+                        endpoint for the dataplane
+  --dataplane-region DATAPLANE_REGION
+                        the AWS region name override for the Data Plane
+```
+
 __Note__: These can be configured correctly for you if you follow the guided `pitsctl` installation
 wizard.
 
@@ -169,7 +184,7 @@ Usage: pitsctl - v0.8.2: Install or manage pinthesky software
   -v,--version: Prints the version and exists
 ```
 
-## Control Plane and Infrastructure
+## Control/Data Plane and Infrastructure
 
 The [pits-infra][1] package can be used to deploy a complete and working 
 AWS cloud infrastructure to support the device configuration and integration.
@@ -178,6 +193,7 @@ The infrastructure contains the following:
 - Storage configuration
 - Policy and device authorization
 - Control Plane deployment
+- Data Plane deployment
 - Console deployment
 - Console authorization through Cognito
 

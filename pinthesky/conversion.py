@@ -43,7 +43,7 @@ class VideoConversion():
     def write(self, b):
         try:
             self.process.stdin.write(b)
-        except Exception as e:
+        except:
             logger.warning('Tried to write to a broken pipe. Skipping.')
 
     def flush(self):
