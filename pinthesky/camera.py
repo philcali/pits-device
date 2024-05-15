@@ -262,9 +262,12 @@ class CameraThread(threading.Thread, Handler, ShadowConfigHandler):
                 self.pause()
 
     def pause(self):
-        if self.camera.recording:
+        if self.camera.recording or self.recording_thread is not None:
             # Have to tear down camera completely to reinstall encoders
-            self.camera.close()
+            try:
+                self.camera.close()
+            except Exception as e:
+                logger.warning(f'Failed to close, but killed the camera {e}')
             if self.recording_thread is not None:
                 self.recording_thread.join()
                 self.recording_thread = None
