@@ -41,8 +41,10 @@ class VideoConversion():
         logger.info('Started ffmpeg conversion process')
 
     def write(self, b):
-        if self.process.poll() is None:
+        try:
             self.process.stdin.write(b)
+        except Exception as e:
+            logger.warning('Tried to write to a broken pipe. Skipping.')
 
     def flush(self):
         logger.info('Closing ffmpeg conversion process')
